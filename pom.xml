@@ -55,13 +55,6 @@
             <artifactId>liquibase-core</artifactId>
         </dependency>
 
-        <!--RabbitMQ-->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-stream-rabbit</artifactId>
-            <version>3.2.6</version>
-        </dependency>
-
         <!--JUnit5 for unit testing-->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -112,6 +105,22 @@
             <classifier>osx-aarch_64</classifier>
             <scope>runtime</scope>
         </dependency>
+
+        <!--RabbitMQ-->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-stream-binder-rabbit</artifactId>
+            <version>3.2.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-stream</artifactId>
+            <version>3.2.6</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+            <classifier>test-binder</classifier>
+        </dependency>
+
     </dependencies>
 
     <build>
