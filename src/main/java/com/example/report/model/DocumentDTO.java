@@ -1,21 +1,19 @@
 package com.example.report.model;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
-@Setter
+@Data
 @Builder
-@Entity
-@Table(name = "documents")
-public class Document {
+public class DocumentDTO {
 
-    @Id
     private Long id;
 
     private LocalDate uploadDate;

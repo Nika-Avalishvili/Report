@@ -2,19 +2,11 @@ package com.example.report.model;
 
 import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
-@Setter
+@Data
 @Builder
-@Entity
-public class Benefit {
-    @Id
+public class BenefitDTOForMQ {
     private Long id;
     private String name;
     private String benefitTypeName;
