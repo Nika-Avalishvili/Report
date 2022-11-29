@@ -15,7 +15,6 @@ import javax.persistence.Id;
 @Entity
 public class Benefit {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     private String benefitTypeName;

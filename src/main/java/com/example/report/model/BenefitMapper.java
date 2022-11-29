@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 @Component
 public class BenefitMapper {
 
-    public BenefitDTOForRabbitMQ entityToDto(Benefit benefit){
-        return BenefitDTOForRabbitMQ.builder()
+    public BenefitDTOForMQ entityToDto(Benefit benefit){
+        return BenefitDTOForMQ.builder()
                 .id(benefit.getId())
                 .name(benefit.getName())
                 .benefitTypeName(benefit.getBenefitTypeName())
@@ -17,20 +17,20 @@ public class BenefitMapper {
                 .build();
     }
 
-    public List<BenefitDTOForRabbitMQ> entityToDto(List<Benefit> benefits){
+    public List<BenefitDTOForMQ> entityToDto(List<Benefit> benefits){
         return benefits.stream().map(this::entityToDto).collect(Collectors.toList());
     }
 
-    public Benefit dtoToEntity(BenefitDTOForRabbitMQ benefitDTOForRabbitMQ){
+    public Benefit dtoToEntity(BenefitDTOForMQ benefitDTOForMQ){
         return Benefit.builder()
-                .id(benefitDTOForRabbitMQ.getId())
-                .name(benefitDTOForRabbitMQ.getName())
-                .benefitTypeName(benefitDTOForRabbitMQ.getBenefitTypeName())
-                .calculationMethodName(benefitDTOForRabbitMQ.getCalculationMethodName())
+                .id(benefitDTOForMQ.getId())
+                .name(benefitDTOForMQ.getName())
+                .benefitTypeName(benefitDTOForMQ.getBenefitTypeName())
+                .calculationMethodName(benefitDTOForMQ.getCalculationMethodName())
                 .build();
     }
 
-    public List<Benefit> dtoToEntity(List<BenefitDTOForRabbitMQ> benefitDTOForRabbitMQS){
-        return benefitDTOForRabbitMQS.stream().map(this::dtoToEntity).collect(Collectors.toList());
+    public List<Benefit> dtoToEntity(List<BenefitDTOForMQ> benefitDTOForMQS){
+        return benefitDTOForMQS.stream().map(this::dtoToEntity).collect(Collectors.toList());
     }
 }

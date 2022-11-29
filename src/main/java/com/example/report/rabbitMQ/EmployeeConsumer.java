@@ -5,6 +5,7 @@ import com.example.report.model.EmployeeDTO;
 import com.example.report.model.EmployeeMapper;
 import com.example.report.repository.EmployeeRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import java.util.function.Consumer;
 
 @RequiredArgsConstructor
 @Component
+@Slf4j
 public class EmployeeConsumer {
 
     private final EmployeeMapper employeeMapper;
@@ -24,7 +26,7 @@ public class EmployeeConsumer {
         return employeeDTO -> {
             Employee employee = employeeMapper.dtoToEntity(employeeDTO);
             employeeRepository.save(employee);
-            System.out.println("MESSAGE RECEIVED: Employee added in DB!");
+            log.info("MESSAGE RECEIVED: Employee ({}) added in DB!", employeeDTO);
         };
     }
 }
