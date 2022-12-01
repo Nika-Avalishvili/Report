@@ -15,15 +15,14 @@ public class ReportEntryDTO {
 
     private Long id;
 
-
-    private Employee employee;
-    private Benefit benefit;
-    private Document document;
+    private EmployeeDTO employeeDTO;
+    private BenefitDTOForMQ benefitDTOForMQ;
+    private DocumentDTO documentDTO;
 
     private BigDecimal netAmount;
     private BigDecimal pensionsFund;
     private BigDecimal personalIncomeTax;
     private BigDecimal grossAmount;
 
-    private Report report;
+    private ReportDTO reportDTO;
 }
