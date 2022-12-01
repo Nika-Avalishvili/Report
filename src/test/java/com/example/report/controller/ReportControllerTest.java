@@ -91,15 +91,15 @@ public class ReportControllerTest {
         LocalDate from = LocalDate.of(2022, 1, 1);
         LocalDate to = LocalDate.of(2022, 12, 31);
 
-        String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.post("/report/generate/{from}/{to}", from, to))
+        String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.post("/report/generate?startDate={from}&endDate={to}", from, to))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
         List<ReportEntryDTO> actualReportEntryDTOsList = objectMapper.readValue(responseAsAString, new TypeReference<>() {
         });
 
-        Assertions.assertEquals(392, actualReportEntryDTOsList.get(0).getNetAmount().intValue());
-        Assertions.assertEquals(98, actualReportEntryDTOsList.get(0).getPersonalIncomeTax().intValue());
+        assertThat(actualReportEntryDTOsList.get(0).getNetAmount()).isEqualByComparingTo(BigDecimal.valueOf(392));
+        assertThat(actualReportEntryDTOsList.get(0).getPersonalIncomeTax()).isEqualByComparingTo(BigDecimal.valueOf(98));
     }
 
     @Test
@@ -142,7 +142,7 @@ public class ReportControllerTest {
         List<ReportEntry> actualReportEntryDTOsList = objectMapper.readValue(responseAsAString, new TypeReference<>() {
         });
 
-        assertThat(reportEntry.getNetAmount().intValue()).isEqualTo(actualReportEntryDTOsList.get(0).getNetAmount().intValue());
-        assertThat(reportEntry.getPensionsFund().intValue()).isEqualTo(actualReportEntryDTOsList.get(0).getPensionsFund().intValue());
+        assertThat(reportEntry.getNetAmount()).isEqualByComparingTo(actualReportEntryDTOsList.get(0).getNetAmount());
+        assertThat(reportEntry.getPensionsFund()).isEqualByComparingTo(actualReportEntryDTOsList.get(0).getPensionsFund());
     }
 }

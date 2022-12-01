@@ -17,8 +17,8 @@ public class ReportController {
 
     private final ReportService reportService;
 
-    @PostMapping("/generate/{startDate}/{endDate}")
-    public List<ReportEntryDTO> generateReportEntries(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate){
+    @PostMapping("/generate")
+    public List<ReportEntryDTO> generateReportEntries(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate){
         return reportService.generateReportEntries(startDate, endDate);
     }
 

@@ -10,6 +10,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -58,12 +60,12 @@ public class ReportServiceTest {
         Document document = Document.builder()
                 .id(1L)
                 .uploadDate(LocalDate.of(2022, 11, 30))
-                .effectiveDate(LocalDate.of(2022, 11, 30))
+                .effectiveDate(LocalDate.of(2022, 4, 3))
                 .employeeId(1L)
                 .benefitId(1L)
                 .amount(BigDecimal.valueOf(500))
                 .build();
-        Mockito.when(documentRepository.findByEffectiveDateBetween(any(), any())).thenReturn(List.of(document));
+        Mockito.when(documentRepository.findByEffectiveDateBetween(any(LocalDate.class), any(LocalDate.class))).thenReturn(List.of(document));
 
         Report report = Report.builder()
                 .id(1L)
@@ -92,11 +94,22 @@ public class ReportServiceTest {
                 .build();
         Mockito.when(benefitRepository.getReferenceById(anyLong())).thenReturn(benefit);
 
-        List<ReportEntryDTO> reportEntryDTOS = reportService.generateReportEntries(LocalDate.of(2022, 1, 1), LocalDate.of(202, 12, 31));
+        ReportEntry reportEntry = ReportEntry.builder()
+                .report(report)
+                .employee(employee)
+                .benefit(benefit)
+                .netAmount(BigDecimal.valueOf(392))
+                .personalIncomeTax(BigDecimal.valueOf(98))
+                .pensionsFund(BigDecimal.valueOf(10))
+                .grossAmount(BigDecimal.valueOf(500))
+                .document(document)
+                .build();
+        Mockito.when(reportEntryRepository.saveAll(any())).thenReturn(List.of(reportEntry));
 
-        Assertions.assertEquals(392, reportEntryDTOS.get(0).getNetAmount().intValue());
-        Assertions.assertEquals(98, reportEntryDTOS.get(0).getPersonalIncomeTax().intValue());
+        List<ReportEntryDTO> reportEntryDTOS = reportService.generateReportEntries(LocalDate.of(2022, 1, 1), LocalDate.of(2022, 12, 31));
 
+        assertThat(reportEntryDTOS.get(0).getNetAmount()).isEqualByComparingTo(BigDecimal.valueOf(392));
+        assertThat(reportEntryDTOS.get(0).getPersonalIncomeTax()).isEqualByComparingTo(BigDecimal.valueOf(98));
     }
 
     @Test
@@ -115,7 +128,7 @@ public class ReportServiceTest {
 
     @Test
     void getReportEntriesByReportId() {
-        ReportEntry reportEntry2 = ReportEntry.builder()
+        ReportEntry reportEntry = ReportEntry.builder()
                 .report(new Report(8L, LocalDate.of(2022, 1, 30), LocalDate.of(2022, 1, 30)))
                 .employee(new Employee())
                 .benefit(new Benefit())
@@ -126,8 +139,8 @@ public class ReportServiceTest {
                 .document(new Document())
                 .build();
 
-        Mockito.when(reportEntryRepository.findAllByReportId(anyLong())).thenReturn(List.of(reportEntry2));
+        Mockito.when(reportEntryRepository.findAllByReportId(anyLong())).thenReturn(List.of(reportEntry));
 
-        Assertions.assertEquals(6000, reportService.getReportEntriesByReportId(8L).get(0).getNetAmount().intValue());
+        assertThat(reportService.getReportEntriesByReportId(8L).get(0).getNetAmount()).isEqualByComparingTo(BigDecimal.valueOf(6000));
     }
 }
