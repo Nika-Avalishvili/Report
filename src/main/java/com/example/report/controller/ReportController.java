@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -25,6 +26,11 @@ public class ReportController {
     @GetMapping()
     public List<ReportDTO> getAllReports(){
         return reportService.getAllReports();
+    }
+
+    @GetMapping("/extractReports")
+    public String extractAllReports() throws IOException {
+        return reportService.extractAllReports();
     }
 
     @GetMapping("/{reportId}")

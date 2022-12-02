@@ -4,7 +4,10 @@ import com.example.report.model.*;
 import com.example.report.repository.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Assertions;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +19,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.io.FileInputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -144,5 +148,27 @@ public class ReportControllerTest {
 
         assertThat(reportEntry.getNetAmount()).isEqualByComparingTo(actualReportEntryDTOsList.get(0).getNetAmount());
         assertThat(reportEntry.getPensionsFund()).isEqualByComparingTo(actualReportEntryDTOsList.get(0).getPensionsFund());
+    }
+
+
+    @Test
+    void extractAllReports() throws Exception {
+        LocalDate testDate = LocalDate.of(2022, 8, 15);
+        Report report1 = new Report(10L, testDate, testDate);
+        Report report2 = new Report(16L, testDate, testDate);
+        reportRepository.saveAll(List.of(report1, report2));
+
+        String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.get("/report/extractReports"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        FileInputStream file = new FileInputStream("List_of_Reports.xlsx");
+        Workbook workbook = new XSSFWorkbook(file);
+        Sheet sheet = workbook.getSheetAt(0);
+        Row row1 = sheet.getRow(1);
+        LocalDate date = row1.getCell(1).getLocalDateTimeCellValue().toLocalDate();
+
+        assertThat(2).isEqualTo(sheet.getLastRowNum());
+        assertThat(testDate).isEqualTo(date);
     }
 }
