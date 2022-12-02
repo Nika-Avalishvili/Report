@@ -157,9 +157,13 @@ public class ReportServiceTest {
         Report report2 = new Report(19L, testDate, testDate);
         Mockito.when(reportRepository.findAll()).thenReturn(List.of(report1, report2));
 
-        String finalText = reportService.extractAllReports();
+        List<ReportDTO> reportDTOS = reportService.extractAllReports();
 
-        FileInputStream file = new FileInputStream(new File("/Users/nika.avalishvili/Desktop/Report/List_of_Reports.xlsx"));
+        File currDir = new File(".");
+        String path = currDir.getAbsolutePath();
+        String fileLocation = path.substring(0, path.length() - 1) + "List_of_Reports.xlsx";
+
+        FileInputStream file = new FileInputStream(new File(fileLocation));
         Workbook workbook = new XSSFWorkbook(file);
         Sheet sheet = workbook.getSheetAt(0);
         Row row1 = sheet.getRow(1);

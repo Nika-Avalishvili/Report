@@ -48,8 +48,8 @@ public class ReportService {
         Boolean isActive = employee.getIsActive();
         Boolean isPensionsPayer = employee.getIsPensionsPayer();
         String benefitType = benefit.getBenefitTypeName();
-        ;
         String calculationMethod = benefit.getCalculationMethodName();
+
         if (!isActive) {
             calculatedNumbers.put(NET_AMOUNT, BigDecimal.valueOf(0));
             calculatedNumbers.put(PENSIONS_FUND, BigDecimal.valueOf(0));
@@ -93,7 +93,6 @@ public class ReportService {
             calculatedNumbers.put(GROSS_AMOUNT, amount.multiply(BigDecimal.valueOf(-1)));
             return calculatedNumbers;
         }
-
     }
 
     private ReportEntry documentEntryToReportEntry(Document document, Report report) {
@@ -110,22 +109,6 @@ public class ReportService {
                 .grossAmount(calculatedNumbers.get(GROSS_AMOUNT))
                 .report(report)
                 .build();
-    }
-
-    private void writeDataInExcel(Sheet sheet,Integer rowNumber, Report report, CellStyle numberStyle, CellStyle dateStyle){
-        Row row = sheet.createRow(rowNumber+1);
-
-        Cell cell = row.createCell(0);
-        cell.setCellValue(report.getId());
-        cell.setCellStyle(numberStyle);
-
-        cell = row.createCell(1);
-        cell.setCellValue(report.getStartDate());
-        cell.setCellStyle(dateStyle);
-
-        cell = row.createCell(2);
-        cell.setCellValue(report.getEndDate());
-        cell.setCellStyle(dateStyle);
     }
 
     public List<ReportEntryDTO> generateReportEntries(LocalDate from, LocalDate to) {
@@ -151,7 +134,24 @@ public class ReportService {
         return reportEntryMapper.entityToDto(reportEntryRepository.findAllByReportId(reportId));
     }
 
-    private void sheetStyle(Sheet sheet){
+
+    private void writeReportDataInExcelRow(Sheet sheet, Integer rowNumber, Report report, CellStyle numberStyle, CellStyle dateStyle){
+        Row row = sheet.createRow(rowNumber);
+
+        Cell cell = row.createCell(0);
+        cell.setCellValue(report.getId());
+        cell.setCellStyle(numberStyle);
+
+        cell = row.createCell(1);
+        cell.setCellValue(report.getStartDate());
+        cell.setCellStyle(dateStyle);
+
+        cell = row.createCell(2);
+        cell.setCellValue(report.getEndDate());
+        cell.setCellStyle(dateStyle);
+    }
+
+    private void applyCommonSheetStyle(Sheet sheet){
         sheet.autoSizeColumn(0);
         sheet.autoSizeColumn(1);
         sheet.autoSizeColumn(2);
@@ -160,7 +160,8 @@ public class ReportService {
         sheet.setZoom(130);
     }
 
-    private void headerCellStyle(Workbook workbook, Sheet sheet, CellStyle headerStyle){
+    private CellStyle headerCellStyle(Workbook workbook, Sheet sheet){
+        CellStyle headerStyle = workbook.createCellStyle();
         XSSFFont font = ((XSSFWorkbook) workbook).createFont();
         font.setFontName("Arial");
         font.setFontHeightInPoints((short) 11);
@@ -187,40 +188,44 @@ public class ReportService {
         headerCell = header.createCell(2);
         headerCell.setCellValue("End date");
         headerCell.setCellStyle(headerStyle);
+        return headerStyle;
     }
 
-    private void cellNumberStyle(CellStyle cellStyle){
-        cellStyle.setWrapText(true);
-        cellStyle.setBorderBottom(BorderStyle.THIN);
-        cellStyle.setDataFormat((short) 1);
-        cellStyle.setAlignment(HorizontalAlignment.LEFT);
-        cellStyle.setBottomBorderColor(HSSFColor.HSSFColorPredefined.TEAL.getIndex());
+    private CellStyle cellNumberStyle(Workbook workbook){
+        CellStyle numberStyle = workbook.createCellStyle();
+        numberStyle.setWrapText(true);
+        numberStyle.setBorderBottom(BorderStyle.THIN);
+        numberStyle.setDataFormat((short) 1);
+        numberStyle.setAlignment(HorizontalAlignment.LEFT);
+        numberStyle.setBottomBorderColor(HSSFColor.HSSFColorPredefined.TEAL.getIndex());
+        return numberStyle;
     }
 
-    private void cellDateStyle(CellStyle cellStyle){
-        cellStyle.setWrapText(true);
-        cellStyle.setBorderBottom(BorderStyle.THIN);
-        cellStyle.setDataFormat((short) 14);
-        cellStyle.setBottomBorderColor(HSSFColor.HSSFColorPredefined.TEAL.getIndex());
+    private CellStyle cellDateStyle(Workbook workbook){
+        CellStyle dateStyle = workbook.createCellStyle();
+        dateStyle.setWrapText(true);
+        dateStyle.setBorderBottom(BorderStyle.THIN);
+        dateStyle.setDataFormat((short) 14);
+        dateStyle.setBottomBorderColor(HSSFColor.HSSFColorPredefined.TEAL.getIndex());
+        return dateStyle;
     }
 
-    public String extractAllReports() throws IOException {
+    public List<ReportDTO> extractAllReports() throws IOException {
         List<Report> reportList = reportRepository.findAll();
 
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("List of reports");
-        sheetStyle(sheet);
+        applyCommonSheetStyle(sheet);
 
-        CellStyle headerStyle = workbook.createCellStyle();
-        headerCellStyle(workbook, sheet, headerStyle);
+        CellStyle headerStyle = headerCellStyle(workbook, sheet);
+        CellStyle numberStyle = cellNumberStyle(workbook);
+        CellStyle dateStyle = cellDateStyle(workbook);
 
-        CellStyle numberStyle = workbook.createCellStyle();
-        cellNumberStyle(numberStyle);
+        for (int i = 0; i < reportList.size(); i++) {
+            Report report = reportList.get(i);
+            writeReportDataInExcelRow(sheet,i+1,report, numberStyle, dateStyle);
+        }
 
-        CellStyle dateStyle = workbook.createCellStyle();
-        cellDateStyle(dateStyle);
-
-        reportList.stream().forEach(report -> writeDataInExcel(sheet, reportList.indexOf(report), report, numberStyle, dateStyle));
 
         File currDir = new File(".");
         String path = currDir.getAbsolutePath();
@@ -229,7 +234,7 @@ public class ReportService {
         FileOutputStream outputStream = new FileOutputStream(fileLocation);
         workbook.write(outputStream);
         workbook.close();
-        return String.format("List of reports exported successfully to the path - %s", fileLocation);
+        return reportMapper.entityToDto(reportList);
     }
 
 

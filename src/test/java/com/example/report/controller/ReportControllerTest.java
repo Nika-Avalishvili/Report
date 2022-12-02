@@ -19,6 +19,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -162,13 +163,20 @@ public class ReportControllerTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        FileInputStream file = new FileInputStream("List_of_Reports.xlsx");
+        List<ReportDTO> actualReportDTOsList = objectMapper.readValue(responseAsAString, new TypeReference<>() {
+        });
+
+        File currDir = new File(".");
+        String path = currDir.getAbsolutePath();
+        String fileLocation = path.substring(0, path.length() - 1) + "List_of_Reports.xlsx";
+
+        FileInputStream file = new FileInputStream(new File(fileLocation));
         Workbook workbook = new XSSFWorkbook(file);
         Sheet sheet = workbook.getSheetAt(0);
         Row row1 = sheet.getRow(1);
         LocalDate date = row1.getCell(1).getLocalDateTimeCellValue().toLocalDate();
 
-        assertThat(2).isEqualTo(sheet.getLastRowNum());
-        assertThat(testDate).isEqualTo(date);
+        assertThat(actualReportDTOsList.size()).isEqualTo(sheet.getLastRowNum());
+        assertThat(actualReportDTOsList.get(1).getStartDate()).isEqualTo(date);
     }
 }

@@ -1,5 +1,6 @@
 package com.example.report.controller;
 
+import com.example.report.ReportApplication;
 import com.example.report.model.ReportDTO;
 import com.example.report.model.ReportEntryDTO;
 import com.example.report.service.ReportService;
@@ -29,7 +30,7 @@ public class ReportController {
     }
 
     @GetMapping("/extractReports")
-    public String extractAllReports() throws IOException {
+    public List<ReportDTO> extractAllReports() throws IOException {
         return reportService.extractAllReports();
     }
 
