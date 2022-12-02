@@ -2,10 +2,6 @@ package com.example.report.service;
 
 import com.example.report.model.*;
 import com.example.report.repository.*;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,9 +9,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.ResponseEntity;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -144,11 +140,12 @@ public class ReportServiceTest {
                 .grossAmount(BigDecimal.valueOf(7500))
                 .document(new Document())
                 .build();
-
         Mockito.when(reportEntryRepository.findAllByReportId(anyLong())).thenReturn(List.of(reportEntry));
 
         assertThat(reportService.getReportEntriesByReportId(8L).get(0).getNetAmount()).isEqualByComparingTo(BigDecimal.valueOf(6000));
     }
+
+
 
     @Test
     void extractAllReports() throws IOException {
@@ -157,22 +154,8 @@ public class ReportServiceTest {
         Report report2 = new Report(19L, testDate, testDate);
         Mockito.when(reportRepository.findAll()).thenReturn(List.of(report1, report2));
 
-        List<ReportDTO> reportDTOS = reportService.extractAllReports();
-
-        File currDir = new File(".");
-        String path = currDir.getAbsolutePath();
-        String fileLocation = path.substring(0, path.length() - 1) + "List_of_Reports.xlsx";
-
-        FileInputStream file = new FileInputStream(new File(fileLocation));
-        Workbook workbook = new XSSFWorkbook(file);
-        Sheet sheet = workbook.getSheetAt(0);
-        Row row1 = sheet.getRow(1);
-        Row row2 = sheet.getRow(2);
-
-        Long id1 = (long) row1.getCell(0).getNumericCellValue();
-        Long id2 = (long) row2.getCell(0).getNumericCellValue();
-
-        assertThat(id1).isEqualByComparingTo(report1.getId());
-        assertThat(id2).isEqualByComparingTo(report2.getId());
+        ResponseEntity<ByteArrayResource> reportDTOS = reportService.extractAllReports();
+        Integer statusCode = reportDTOS.getStatusCodeValue();
+        assertThat(statusCode).isEqualTo(201);
     }
 }
