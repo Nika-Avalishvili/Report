@@ -5,7 +5,9 @@ import com.example.report.model.ReportDTO;
 import com.example.report.model.ReportEntryDTO;
 import com.example.report.service.ReportService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -30,7 +32,7 @@ public class ReportController {
     }
 
     @GetMapping("/extractReports")
-    public List<ReportDTO> extractAllReports() throws IOException {
+    public ResponseEntity<ByteArrayResource> extractAllReports() throws IOException {
         return reportService.extractAllReports();
     }
 

@@ -159,24 +159,7 @@ public class ReportControllerTest {
         Report report2 = new Report(16L, testDate, testDate);
         reportRepository.saveAll(List.of(report1, report2));
 
-        String responseAsAString = mockMvc.perform(MockMvcRequestBuilders.get("/report/extractReports"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-
-        List<ReportDTO> actualReportDTOsList = objectMapper.readValue(responseAsAString, new TypeReference<>() {
-        });
-
-        File currDir = new File(".");
-        String path = currDir.getAbsolutePath();
-        String fileLocation = path.substring(0, path.length() - 1) + "List_of_Reports.xlsx";
-
-        FileInputStream file = new FileInputStream(new File(fileLocation));
-        Workbook workbook = new XSSFWorkbook(file);
-        Sheet sheet = workbook.getSheetAt(0);
-        Row row1 = sheet.getRow(1);
-        LocalDate date = row1.getCell(1).getLocalDateTimeCellValue().toLocalDate();
-
-        assertThat(actualReportDTOsList.size()).isEqualTo(sheet.getLastRowNum());
-        assertThat(actualReportDTOsList.get(1).getStartDate()).isEqualTo(date);
+        mockMvc.perform(MockMvcRequestBuilders.get("/report/extractReports"))
+                .andExpect(status().isCreated());
     }
 }

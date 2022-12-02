@@ -7,14 +7,21 @@ import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Formatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -210,14 +217,14 @@ public class ReportService {
         return dateStyle;
     }
 
-    public List<ReportDTO> extractAllReports() throws IOException {
+    public ResponseEntity<ByteArrayResource> extractAllReports() throws IOException {
         List<Report> reportList = reportRepository.findAll();
 
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("List of reports");
         applyCommonSheetStyle(sheet);
 
-        CellStyle headerStyle = headerCellStyle(workbook, sheet);
+        headerCellStyle(workbook, sheet);
         CellStyle numberStyle = cellNumberStyle(workbook);
         CellStyle dateStyle = cellDateStyle(workbook);
 
@@ -226,15 +233,18 @@ public class ReportService {
             writeReportDataInExcelRow(sheet,i+1,report, numberStyle, dateStyle);
         }
 
+        DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("YYYYMMdd_HHmm");
+        String localDateTime = LocalDateTime.now().format(myFormatObj).toString();
 
-        File currDir = new File(".");
-        String path = currDir.getAbsolutePath();
-        String fileLocation = path.substring(0, path.length() - 1) + "List_of_Reports.xlsx";
-
-        FileOutputStream outputStream = new FileOutputStream(fileLocation);
-        workbook.write(outputStream);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        HttpHeaders header = new HttpHeaders();
+        header.setContentType(new MediaType("application", "force-download"));
+        header.set(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment; filename=List_of_Reports_%s.xlsx", localDateTime));
+        workbook.write(stream);
         workbook.close();
-        return reportMapper.entityToDto(reportList);
+
+        return new ResponseEntity<>(new ByteArrayResource(stream.toByteArray()),
+                header, HttpStatus.CREATED);
     }
 
 
