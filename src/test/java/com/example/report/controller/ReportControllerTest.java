@@ -4,7 +4,10 @@ import com.example.report.model.*;
 import com.example.report.repository.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Assertions;
+//import org.apache.poi.ss.usermodel.Workbook;
+//import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,8 +19,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -144,5 +149,27 @@ public class ReportControllerTest {
 
         assertThat(reportEntry.getNetAmount()).isEqualByComparingTo(actualReportEntryDTOsList.get(0).getNetAmount());
         assertThat(reportEntry.getPensionsFund()).isEqualByComparingTo(actualReportEntryDTOsList.get(0).getPensionsFund());
+    }
+
+
+    @Test
+    void extractAllReports() throws Exception {
+        LocalDate testDate = LocalDate.of(2022, 8, 15);
+        Report report1 = new Report(10L, testDate, testDate);
+        Report report2 = new Report(16L, testDate, testDate);
+        reportRepository.saveAll(List.of(report1, report2));
+
+        byte[] contentAsString = mockMvc.perform(MockMvcRequestBuilders.get("/report/extractReports"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsByteArray();
+
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(contentAsString);
+
+        Workbook workbook = WorkbookFactory.create(byteArrayInputStream);
+
+        LocalDate actualStartDate = workbook.getSheetAt(0).getRow(1).getCell(1).getDateCellValue().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate actualEndDate = workbook.getSheetAt(0).getRow(1).getCell(1).getDateCellValue().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        assertThat(actualStartDate).isEqualTo(report1.getStartDate());
+        assertThat(actualEndDate).isEqualTo(report2.getEndDate());
     }
 }

@@ -26,14 +26,12 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-
         <!--Lombok-->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
-
         <!--Spring Data JPA & PostgreSQL dependency-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -48,13 +46,11 @@
             <artifactId>postgresql</artifactId>
             <version>42.5.0</version>
         </dependency>
-
         <!--Liquibase (to save history of changes in DB)-->
         <dependency>
             <groupId>org.liquibase</groupId>
             <artifactId>liquibase-core</artifactId>
         </dependency>
-
         <!--JUnit5 for unit testing-->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -67,7 +63,6 @@
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
-
         <!--Integration testing dependencies-->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -92,7 +87,6 @@
             <version>1.17.5</version>
             <scope>test</scope>
         </dependency>
-
         <!--Dependency for WebClient-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -105,7 +99,6 @@
             <classifier>osx-aarch_64</classifier>
             <scope>runtime</scope>
         </dependency>
-
         <!--RabbitMQ-->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
@@ -119,6 +112,25 @@
             <type>test-jar</type>
             <scope>test</scope>
             <classifier>test-binder</classifier>
+        </dependency>
+
+        <!--Java libraries for working with Excel files-->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>5.2.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.2</version>
+        </dependency>
+
+        <!--Swagger UI dependency-->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-ui</artifactId>
+            <version>1.6.11</version>
         </dependency>
 
     </dependencies>
@@ -139,5 +151,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

@@ -2,6 +2,7 @@ package com.example.report.service;
 
 import com.example.report.model.*;
 import com.example.report.repository.*;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,12 +11,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 
@@ -142,5 +143,18 @@ public class ReportServiceTest {
         Mockito.when(reportEntryRepository.findAllByReportId(anyLong())).thenReturn(List.of(reportEntry));
 
         assertThat(reportService.getReportEntriesByReportId(8L).get(0).getNetAmount()).isEqualByComparingTo(BigDecimal.valueOf(6000));
+    }
+
+    @Test
+    void extractAllReports() throws IOException {
+        LocalDate testDate = LocalDate.of(2022, 10, 26);
+        Report report1 = new Report(17L, testDate, testDate);
+        Report report2 = new Report(19L, testDate, testDate);
+        Mockito.when(reportRepository.findAll()).thenReturn(List.of(report1, report2));
+
+        Workbook workbook = reportService.extractAllReports();
+
+        assertThat((long) workbook.getSheetAt(0).getRow(1).getCell(0).getNumericCellValue()).isEqualTo(report1.getId());
+        assertThat((long) workbook.getSheetAt(0).getRow(2).getCell(0).getNumericCellValue()).isEqualTo(report2.getId());
     }
 }
