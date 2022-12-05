@@ -19,6 +19,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Formatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -230,19 +233,19 @@ public class ReportService {
             writeReportDataInExcelRow(sheet,i+1,report, numberStyle, dateStyle);
         }
 
+        DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("YYYYMMdd_HHmm");
+        String localDateTime = LocalDateTime.now().format(myFormatObj).toString();
+
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         HttpHeaders header = new HttpHeaders();
         header.setContentType(new MediaType("application", "force-download"));
-        header.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=List_of_Reports.xlsx");
+        header.set(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment; filename=List_of_Reports_%s.xlsx", localDateTime));
+
         workbook.write(stream);
         workbook.close();
 
         return new ResponseEntity<>(new ByteArrayResource(stream.toByteArray()),
                 header, HttpStatus.CREATED);
-
-
-
-
     }
 
 

@@ -155,5 +155,7 @@ public class ReportControllerTest {
 
         mockMvc.perform(MockMvcRequestBuilders.get("/report/extractReports"))
                 .andExpect(status().isCreated());
-        }
+
+    }
+
 }
