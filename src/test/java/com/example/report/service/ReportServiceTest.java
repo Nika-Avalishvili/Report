@@ -2,10 +2,7 @@ package com.example.report.service;
 
 import com.example.report.model.*;
 import com.example.report.repository.*;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,11 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.ResponseEntity;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -159,8 +152,9 @@ public class ReportServiceTest {
         Report report2 = new Report(19L, testDate, testDate);
         Mockito.when(reportRepository.findAll()).thenReturn(List.of(report1, report2));
 
-        ResponseEntity<ByteArrayResource> reportDTOS = reportService.extractAllReports();
-        Integer statusCode = reportDTOS.getStatusCodeValue();
-        assertThat(statusCode).isEqualTo(201);
+        Workbook workbook = reportService.extractAllReports();
+
+        assertThat((long) workbook.getSheetAt(0).getRow(1).getCell(0).getNumericCellValue()).isEqualTo(report1.getId());
+        assertThat((long) workbook.getSheetAt(0).getRow(2).getCell(0).getNumericCellValue()).isEqualTo(report2.getId());
     }
 }
