@@ -28,12 +28,12 @@ public class ReportController {
     private final ReportService reportService;
 
     @PostMapping("/generate")
-    public List<ReportEntryDTO> generateReportEntries(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate){
+    public List<ReportEntryDTO> generateReportEntries(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         return reportService.generateReportEntries(startDate, endDate);
     }
 
     @GetMapping()
-    public List<ReportDTO> getAllReports(){
+    public List<ReportDTO> getAllReports() {
         return reportService.getAllReports();
     }
 
@@ -54,12 +54,26 @@ public class ReportController {
                 header, HttpStatus.CREATED);
     }
 
-    @GetMapping("/{reportId}")
-    public List<ReportEntryDTO> getReportEntriesByReportId(@PathVariable Long reportId){
-        return reportService.getReportEntriesByReportId(reportId);
+    @GetMapping("/extractReportEntries")
+    public ResponseEntity<ByteArrayResource> extractReportEntriesByReportId(@RequestParam Long reportId) throws Exception {
+        Workbook workbook = reportService.extractReportEntriesByReportId(reportId);
+        DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
+        String localDateTime = LocalDateTime.now().format(myFormatObj);
+
+        org.apache.commons.io.output.ByteArrayOutputStream stream = new org.apache.commons.io.output.ByteArrayOutputStream();
+        HttpHeaders header = new HttpHeaders();
+        header.setContentType(new MediaType("application", "force-download"));
+        header.set(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment; filename=Payroll_Register_%s.xlsx", localDateTime));
+        workbook.write(stream);
+        workbook.close();
+
+        return new ResponseEntity<>(new ByteArrayResource(stream.toByteArray()),
+                header, HttpStatus.CREATED);
     }
 
-
-
+    @GetMapping("/{reportId}")
+    public List<ReportEntryDTO> getReportEntriesByReportId(@PathVariable Long reportId) {
+        return reportService.getReportEntriesByReportId(reportId);
+    }
 }
 
