@@ -7,21 +7,12 @@ import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Formatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -167,7 +158,7 @@ public class ReportService {
         sheet.setZoom(130);
     }
 
-    private CellStyle headerCellStyle(Workbook workbook, Sheet sheet){
+    private void applyHeaderCellStyle(Workbook workbook, Sheet sheet){
         CellStyle headerStyle = workbook.createCellStyle();
         XSSFFont font = ((XSSFWorkbook) workbook).createFont();
         font.setFontName("Arial");
@@ -195,10 +186,9 @@ public class ReportService {
         headerCell = header.createCell(2);
         headerCell.setCellValue("End date");
         headerCell.setCellStyle(headerStyle);
-        return headerStyle;
     }
 
-    private CellStyle cellNumberStyle(Workbook workbook){
+    private CellStyle getCellNumberStyle(Workbook workbook){
         CellStyle numberStyle = workbook.createCellStyle();
         numberStyle.setWrapText(true);
         numberStyle.setBorderBottom(BorderStyle.THIN);
@@ -208,7 +198,7 @@ public class ReportService {
         return numberStyle;
     }
 
-    private CellStyle cellDateStyle(Workbook workbook){
+    private CellStyle getCellDateStyle(Workbook workbook){
         CellStyle dateStyle = workbook.createCellStyle();
         dateStyle.setWrapText(true);
         dateStyle.setBorderBottom(BorderStyle.THIN);
@@ -217,35 +207,23 @@ public class ReportService {
         return dateStyle;
     }
 
-    public ResponseEntity<ByteArrayResource> extractAllReports() throws IOException {
+    public Workbook extractAllReports() {
         List<Report> reportList = reportRepository.findAll();
 
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("List of reports");
         applyCommonSheetStyle(sheet);
 
-        headerCellStyle(workbook, sheet);
-        CellStyle numberStyle = cellNumberStyle(workbook);
-        CellStyle dateStyle = cellDateStyle(workbook);
+        applyHeaderCellStyle(workbook, sheet);
+        CellStyle numberStyle = getCellNumberStyle(workbook);
+        CellStyle dateStyle = getCellDateStyle(workbook);
 
         for (int i = 0; i < reportList.size(); i++) {
             Report report = reportList.get(i);
             writeReportDataInExcelRow(sheet,i+1,report, numberStyle, dateStyle);
         }
+        return workbook;
 
-        DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("YYYYMMdd_HHmm");
-        String localDateTime = LocalDateTime.now().format(myFormatObj).toString();
-
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        HttpHeaders header = new HttpHeaders();
-        header.setContentType(new MediaType("application", "force-download"));
-        header.set(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment; filename=List_of_Reports_%s.xlsx", localDateTime));
-
-        workbook.write(stream);
-        workbook.close();
-
-        return new ResponseEntity<>(new ByteArrayResource(stream.toByteArray()),
-                header, HttpStatus.CREATED);
     }
 
 
