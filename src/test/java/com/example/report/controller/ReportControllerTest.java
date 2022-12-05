@@ -174,11 +174,13 @@ public class ReportControllerTest {
     @Test
     void extractReportEntriesByReportId() throws Exception {
         LocalDate testDate = LocalDate.of(2022, 3, 14);
+        LocalDate startDate = LocalDate.of(2021, 3, 14);
+        LocalDate endDate = LocalDate.of(2023, 3, 14);
 
         Document document = new Document(1L, testDate, testDate, 1L, 1L, BigDecimal.valueOf(1020));
         Employee employee = new Employee(1L, "Nika", "Avalishvili", "Department", "Position", "email", true, true);
         Benefit benefit = new Benefit(1L, "Salary", "Accrual", "Gross");
-        Report report = new Report(1L, testDate, testDate);
+        Report report = new Report(1L, startDate, endDate);
 
         ReportEntry reportEntry = ReportEntry.builder()
                 .id(1L)
@@ -196,7 +198,9 @@ public class ReportControllerTest {
         documentRepository.save(document);
         benefitRepository.save(benefit);
         reportEntryRepository.save(reportEntry);
-        Long reportId = reportRepository.save(report).getId();
+        reportRepository.save(report);
+
+        Long reportId = reportEntryRepository.save(reportEntry).getReport().getId();
 
         byte[] contentAsString = mockMvc.perform(MockMvcRequestBuilders.get("/report/extractReportEntries?reportId={reportId}", reportId))
                 .andExpect(status().isCreated())
