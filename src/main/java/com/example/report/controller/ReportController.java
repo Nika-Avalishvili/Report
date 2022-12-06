@@ -25,7 +25,27 @@ import java.util.List;
 @RequestMapping("/report")
 public class ReportController {
 
+    public static final String PAYROLL_REGISTER = "Payroll_Register";
+    private static final String LIST_OF_REPORTS = "List_Of_Reports";
     private final ReportService reportService;
+
+    private ResponseEntity<ByteArrayResource> workbookToResponseEntity(Workbook workbook, String fileName) throws IOException {
+        DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
+        String localDateTime = LocalDateTime.now().format(myFormatObj);
+
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        HttpHeaders header = new HttpHeaders();
+        header.setContentType(new MediaType("application", "force-download"));
+        header.set(HttpHeaders.CONTENT_DISPOSITION,
+                        String.format("attachment; filename=%s_%s.xlsx",
+                        fileName,
+                        localDateTime));
+        workbook.write(stream);
+        workbook.close();
+
+        return new ResponseEntity<>(new ByteArrayResource(stream.toByteArray()),
+                header, HttpStatus.CREATED);
+    }
 
     @PostMapping("/generate")
     public List<ReportEntryDTO> generateReportEntries(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
@@ -40,35 +60,13 @@ public class ReportController {
     @GetMapping("/extractReports")
     public ResponseEntity<ByteArrayResource> extractAllReports() throws IOException {
         Workbook workbook = reportService.extractAllReports();
-        DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
-        String localDateTime = LocalDateTime.now().format(myFormatObj);
-
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        HttpHeaders header = new HttpHeaders();
-        header.setContentType(new MediaType("application", "force-download"));
-        header.set(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment; filename=List_of_Reports_%s.xlsx", localDateTime));
-        workbook.write(stream);
-        workbook.close();
-
-        return new ResponseEntity<>(new ByteArrayResource(stream.toByteArray()),
-                header, HttpStatus.CREATED);
+        return workbookToResponseEntity(workbook, LIST_OF_REPORTS);
     }
 
     @GetMapping("/extractReportEntries")
-    public ResponseEntity<ByteArrayResource> extractReportEntriesByReportId(@RequestParam Long reportId) throws Exception {
+    public ResponseEntity<ByteArrayResource> extractReportEntriesByReportId(@RequestParam Long reportId) throws IOException {
         Workbook workbook = reportService.extractReportEntriesByReportId(reportId);
-        DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
-        String localDateTime = LocalDateTime.now().format(myFormatObj);
-
-        org.apache.commons.io.output.ByteArrayOutputStream stream = new org.apache.commons.io.output.ByteArrayOutputStream();
-        HttpHeaders header = new HttpHeaders();
-        header.setContentType(new MediaType("application", "force-download"));
-        header.set(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment; filename=Payroll_Register_%s.xlsx", localDateTime));
-        workbook.write(stream);
-        workbook.close();
-
-        return new ResponseEntity<>(new ByteArrayResource(stream.toByteArray()),
-                header, HttpStatus.CREATED);
+        return workbookToResponseEntity(workbook, PAYROLL_REGISTER);
     }
 
     @GetMapping("/{reportId}")

@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,6 +28,7 @@ public class ReportService {
     private static final String GROSS = "Gross";
     private static final String NET = "Net";
     private static final String DEDUCTION = "Deduction";
+    private static final String ARIAL = "Arial";
 
     private final DocumentRepository documentRepository;
     private final EmployeeRepository employeeRepository;
@@ -41,54 +41,43 @@ public class ReportService {
     private Map<String, BigDecimal> calculator(BigDecimal amount, Employee employee, Benefit benefit) {
         Map<String, BigDecimal> calculatedNumbers = new HashMap<>();
 
-        Boolean isActive = employee.getIsActive();
-        Boolean isPensionsPayer = employee.getIsPensionsPayer();
+        boolean isActive = employee.getIsActive();
+        boolean isPensionsPayer = employee.getIsPensionsPayer();
         String benefitType = benefit.getBenefitTypeName();
         String calculationMethod = benefit.getCalculationMethodName();
 
         if (!isActive) {
-            calculatedNumbers.put(NET_AMOUNT, BigDecimal.valueOf(0));
-            calculatedNumbers.put(PENSIONS_FUND, BigDecimal.valueOf(0));
-            calculatedNumbers.put(PERSONAL_INCOME_TAX, BigDecimal.valueOf(0));
-            calculatedNumbers.put(GROSS_AMOUNT, BigDecimal.valueOf(0));
-            return calculatedNumbers;
+            calculatedNumbers.put(NET_AMOUNT, BigDecimal.ZERO);
+            calculatedNumbers.put(PENSIONS_FUND, BigDecimal.ZERO);
+            calculatedNumbers.put(PERSONAL_INCOME_TAX, BigDecimal.ZERO);
+            calculatedNumbers.put(GROSS_AMOUNT, BigDecimal.ZERO);
         } else if (isPensionsPayer && benefitType.equals(ACCRUAL) && calculationMethod.equals(GROSS)) {
             calculatedNumbers.put(NET_AMOUNT, amount.multiply(BigDecimal.valueOf(0.784)));
             calculatedNumbers.put(PENSIONS_FUND, amount.multiply(BigDecimal.valueOf(0.02)));
             calculatedNumbers.put(PERSONAL_INCOME_TAX, amount.multiply(BigDecimal.valueOf(0.196)));
             calculatedNumbers.put(GROSS_AMOUNT, amount);
-            return calculatedNumbers;
         } else if (isPensionsPayer && benefitType.equals(ACCRUAL) && calculationMethod.equals(NET)) {
             calculatedNumbers.put(NET_AMOUNT, amount);
             calculatedNumbers.put(PENSIONS_FUND, amount.multiply((BigDecimal.valueOf(0.02).divide(BigDecimal.valueOf(0.784), RoundingMode.HALF_UP))));
             calculatedNumbers.put(PERSONAL_INCOME_TAX, amount.multiply(BigDecimal.valueOf(0.25)));
             calculatedNumbers.put(GROSS_AMOUNT, amount.divide(BigDecimal.valueOf(0.784), RoundingMode.HALF_UP));
-            return calculatedNumbers;
-        } else if (isPensionsPayer && benefitType.equals(DEDUCTION)) {
-            calculatedNumbers.put(NET_AMOUNT, amount.multiply(BigDecimal.valueOf(1)));
-            calculatedNumbers.put(PENSIONS_FUND, BigDecimal.valueOf(0));
-            calculatedNumbers.put(PERSONAL_INCOME_TAX, BigDecimal.valueOf(0));
-            calculatedNumbers.put(GROSS_AMOUNT, amount.multiply(BigDecimal.valueOf(1)));
-            return calculatedNumbers;
         } else if (!isPensionsPayer && benefitType.equals(ACCRUAL) && calculationMethod.equals(GROSS)) {
             calculatedNumbers.put(NET_AMOUNT, amount.multiply(BigDecimal.valueOf(0.8)));
-            calculatedNumbers.put(PENSIONS_FUND, BigDecimal.valueOf(0));
+            calculatedNumbers.put(PENSIONS_FUND, BigDecimal.ZERO);
             calculatedNumbers.put(PERSONAL_INCOME_TAX, amount.multiply(BigDecimal.valueOf(0.2)));
             calculatedNumbers.put(GROSS_AMOUNT, amount);
-            return calculatedNumbers;
         } else if (!isPensionsPayer && benefitType.equals(ACCRUAL) && calculationMethod.equals(NET)) {
             calculatedNumbers.put(NET_AMOUNT, amount);
-            calculatedNumbers.put(PENSIONS_FUND, BigDecimal.valueOf(0));
+            calculatedNumbers.put(PENSIONS_FUND, BigDecimal.ZERO);
             calculatedNumbers.put(PERSONAL_INCOME_TAX, amount.multiply(BigDecimal.valueOf(0.25)));
             calculatedNumbers.put(GROSS_AMOUNT, amount.divide(BigDecimal.valueOf(0.8), RoundingMode.HALF_UP));
-            return calculatedNumbers;
         } else {
-            calculatedNumbers.put(NET_AMOUNT, amount.multiply(BigDecimal.valueOf(1)));
-            calculatedNumbers.put(PENSIONS_FUND, BigDecimal.valueOf(0));
-            calculatedNumbers.put(PERSONAL_INCOME_TAX, BigDecimal.valueOf(0));
-            calculatedNumbers.put(GROSS_AMOUNT, amount.multiply(BigDecimal.valueOf(1)));
-            return calculatedNumbers;
+            calculatedNumbers.put(NET_AMOUNT, amount);
+            calculatedNumbers.put(PENSIONS_FUND, BigDecimal.ZERO);
+            calculatedNumbers.put(PERSONAL_INCOME_TAX, BigDecimal.ZERO);
+            calculatedNumbers.put(GROSS_AMOUNT, amount);
         }
+        return calculatedNumbers;
     }
 
     private ReportEntry documentEntryToReportEntry(Document document, Report report) {
@@ -120,7 +109,7 @@ public class ReportService {
     private void applyHeaderCellStyleForListOfReportsFile(Workbook workbook, Sheet sheet) {
         CellStyle headerStyle = workbook.createCellStyle();
         XSSFFont font = ((XSSFWorkbook) workbook).createFont();
-        font.setFontName("Arial");
+        font.setFontName(ARIAL);
         font.setFontHeightInPoints((short) 11);
         font.setBold(true);
         font.setColor(HSSFColor.HSSFColorPredefined.WHITE.getIndex());
@@ -165,7 +154,7 @@ public class ReportService {
         CellStyle headerStyle = workbook.createCellStyle();
 
         XSSFFont font = ((XSSFWorkbook) workbook).createFont();
-        font.setFontName("Arial");
+        font.setFontName(ARIAL);
         font.setFontHeightInPoints((short) 10);
         font.setBold(false);
         font.setColor(HSSFColor.HSSFColorPredefined.WHITE.getIndex());
@@ -246,7 +235,7 @@ public class ReportService {
         CellStyle lastRowStyle = workbook.createCellStyle();
 
         XSSFFont font = ((XSSFWorkbook) workbook).createFont();
-        font.setFontName("Arial");
+        font.setFontName(ARIAL);
         font.setFontHeightInPoints((short) 10);
         font.setBold(true);
         font.setItalic(true);
@@ -292,74 +281,80 @@ public class ReportService {
         cell.setCellStyle(dateStyle);
     }
 
-    private void writeReportEntryDataInPayrollRegisterFileRows(Sheet sheet, Integer rowNumber, ReportEntry reportEntry, Employee key, Map<String, BigDecimal> value, List<Benefit> accrualsList, List<Benefit> deductionsList, CellStyle numberStyle, CellStyle cellStringStyle) {
+    private void writeReportEntryDataInPayrollRegisterFileRows(Workbook workbook, Sheet sheet, Integer rowNumber, ReportEntry reportEntry, Map.Entry<Employee, Map<String, BigDecimal>> mapEntry, List<Benefit> accrualsList, List<Benefit> deductionsList) {
+        Employee employee = mapEntry.getKey();
+        Map<String, BigDecimal> mapOfAmounts = mapEntry.getValue();
+
+        CellStyle cellNumberStyle = getCellNumberStyle(workbook);
+        CellStyle cellStringStyle = getCellStringStyle(workbook);
+
         Row row = sheet.createRow(rowNumber - 1);
 
         Cell cell = row.createCell(0);
         cell.setCellValue(reportEntry.getReport().getId());
-        cell.setCellStyle(numberStyle);
+        cell.setCellStyle(cellNumberStyle);
 
         cell = row.createCell(1);
-        cell.setCellValue(key.getId());
-        cell.setCellStyle(numberStyle);
+        cell.setCellValue(employee.getId());
+        cell.setCellStyle(cellNumberStyle);
 
         cell = row.createCell(2);
-        cell.setCellValue(key.getFirstName());
+        cell.setCellValue(employee.getFirstName());
         cell.setCellStyle(cellStringStyle);
 
         cell = row.createCell(3);
-        cell.setCellValue(key.getLastName());
+        cell.setCellValue(employee.getLastName());
         cell.setCellStyle(cellStringStyle);
 
         cell = row.createCell(4);
-        cell.setCellValue(key.getDepartment());
+        cell.setCellValue(employee.getDepartment());
         cell.setCellStyle(cellStringStyle);
 
         cell = row.createCell(5);
-        cell.setCellValue(key.getPositions());
+        cell.setCellValue(employee.getPositions());
         cell.setCellStyle(cellStringStyle);
 
         cell = row.createCell(6);
-        cell.setCellValue(key.getEmail());
+        cell.setCellValue(employee.getEmail());
         cell.setCellStyle(cellStringStyle);
 
         cell = row.createCell(7);
         char netFormulaStart = (char) (8 + 65 + accrualsList.size());
         char netFormulaEnd = (char) (8 + 65 + 3 + accrualsList.size() + deductionsList.size());
         cell.setCellFormula(String.format("(%s%s-%s%s)", netFormulaStart, rowNumber, netFormulaEnd, rowNumber));
-        cell.setCellStyle(numberStyle);
+        cell.setCellStyle(cellNumberStyle);
 
         for (int i = 0; i < accrualsList.size(); i++) {
             cell = row.createCell(8 + i);
-            cell.setCellValue(value.get(accrualsList.get(i).getName()).doubleValue());
-            cell.setCellStyle(numberStyle);
+            cell.setCellValue(mapOfAmounts.get(accrualsList.get(i).getName()).doubleValue());
+            cell.setCellStyle(cellNumberStyle);
         }
 
         cell = row.createCell(8 + accrualsList.size());
         char accrualFormulaStart = (char) (8 + 65);
         char accrualFormulaEnd = (char) (8 + 65 + accrualsList.size() - 1);
         cell.setCellFormula(String.format("sum(%s%s:%s%s)", accrualFormulaStart, rowNumber, accrualFormulaEnd, rowNumber));
-        cell.setCellStyle(numberStyle);
+        cell.setCellStyle(cellNumberStyle);
 
         for (int i = 0; i < deductionsList.size(); i++) {
             cell = row.createCell(9 + accrualsList.size() + i);
-            cell.setCellValue(value.get(deductionsList.get(i).getName()).doubleValue());
-            cell.setCellStyle(numberStyle);
+            cell.setCellValue(mapOfAmounts.get(deductionsList.get(i).getName()).doubleValue());
+            cell.setCellStyle(cellNumberStyle);
         }
 
         cell = row.createCell(9 + accrualsList.size() + deductionsList.size());
-        cell.setCellValue(value.get(PERSONAL_INCOME_TAX).doubleValue());
-        cell.setCellStyle(numberStyle);
+        cell.setCellValue(mapOfAmounts.get(PERSONAL_INCOME_TAX).doubleValue());
+        cell.setCellStyle(cellNumberStyle);
 
         cell = row.createCell(10 + accrualsList.size() + deductionsList.size());
-        cell.setCellValue(value.get(PENSIONS_FUND).doubleValue());
-        cell.setCellStyle(numberStyle);
+        cell.setCellValue(mapOfAmounts.get(PENSIONS_FUND).doubleValue());
+        cell.setCellStyle(cellNumberStyle);
 
         cell = row.createCell(11 + accrualsList.size() + deductionsList.size());
         char deductionFormulaStart = (char) (8 + 65 + 1 + accrualsList.size());
         char deductionFormulaEnd = (char) (8 + 65 + 2 + accrualsList.size() + deductionsList.size());
         cell.setCellFormula(String.format("sum(%s%s:%s%s)", deductionFormulaStart, rowNumber, deductionFormulaEnd, rowNumber));
-        cell.setCellStyle(numberStyle);
+        cell.setCellStyle(cellNumberStyle);
     }
 
     private CellStyle getCellStringStyle(Workbook workbook) {
@@ -404,21 +399,22 @@ public class ReportService {
             BigDecimal taxAmount = reportEntry.getPersonalIncomeTax();
 
             if (amountsPerEmployee.containsKey(employee)) {
-                if (amountsPerEmployee.get(employee).containsKey(benefitName)) {
-                    amountsPerEmployee.get(employee).put(benefitName, amountsPerEmployee.get(employee).get(benefitName).add(amount));
-                    amountsPerEmployee.get(employee).put(PENSIONS_FUND, amountsPerEmployee.get(employee).get(PENSIONS_FUND).add(pensionsAmount));
-                    amountsPerEmployee.get(employee).put(PERSONAL_INCOME_TAX, amountsPerEmployee.get(employee).get(PERSONAL_INCOME_TAX).add(taxAmount));
+                Map<String, BigDecimal> benefitsWithAmounts = amountsPerEmployee.get(employee);
+                if (benefitsWithAmounts.containsKey(benefitName)) {
+                    benefitsWithAmounts.put(benefitName, benefitsWithAmounts.get(benefitName).add(amount));
+                    benefitsWithAmounts.put(PENSIONS_FUND, benefitsWithAmounts.get(PENSIONS_FUND).add(pensionsAmount));
+                    benefitsWithAmounts.put(PERSONAL_INCOME_TAX, benefitsWithAmounts.get(PERSONAL_INCOME_TAX).add(taxAmount));
                 } else {
-                    amountsPerEmployee.get(employee).put(benefitName, amount);
-                    amountsPerEmployee.get(employee).put(PENSIONS_FUND, amountsPerEmployee.get(employee).get(PENSIONS_FUND).add(pensionsAmount));
-                    amountsPerEmployee.get(employee).put(PERSONAL_INCOME_TAX, amountsPerEmployee.get(employee).get(PERSONAL_INCOME_TAX).add(taxAmount));
+                    benefitsWithAmounts.put(benefitName, amount);
+                    benefitsWithAmounts.put(PENSIONS_FUND, benefitsWithAmounts.get(PENSIONS_FUND).add(pensionsAmount));
+                    benefitsWithAmounts.put(PERSONAL_INCOME_TAX, benefitsWithAmounts.get(PERSONAL_INCOME_TAX).add(taxAmount));
                 }
             } else {
-                Map<String, BigDecimal> values = new HashMap<>();
-                amountsPerEmployee.put(employee, values);
-                amountsPerEmployee.get(employee).put(benefitName, amount);
-                amountsPerEmployee.get(employee).put(PENSIONS_FUND, pensionsAmount);
-                amountsPerEmployee.get(employee).put(PERSONAL_INCOME_TAX, taxAmount);
+                Map<String, BigDecimal> benefitsWithAmounts = new HashMap<>();
+                benefitsWithAmounts.put(benefitName, amount);
+                benefitsWithAmounts.put(PENSIONS_FUND, pensionsAmount);
+                benefitsWithAmounts.put(PERSONAL_INCOME_TAX, taxAmount);
+                amountsPerEmployee.put(employee, benefitsWithAmounts);
             }
         }
         return amountsPerEmployee;
@@ -427,28 +423,29 @@ public class ReportService {
     public Workbook extractReportEntriesByReportId(Long reportId) {
         List<ReportEntry> reportEntries = reportEntryRepository.findAllByReportId(reportId);
 
-        Set<Benefit> accruals = reportEntries.stream().map(ReportEntry::getBenefit).filter(benefit -> benefit.getBenefitTypeName().equals(ACCRUAL)).collect(Collectors.toSet());
-        Set<Benefit> deductions = reportEntries.stream().map(ReportEntry::getBenefit).filter(benefit -> benefit.getBenefitTypeName().equals(DEDUCTION)).collect(Collectors.toSet());
-        List<Benefit> accrualsList = new ArrayList<>(accruals);
-        List<Benefit> deductionsList = new ArrayList<>(deductions);
+        List<Benefit> accrualsList = reportEntries.stream()
+                .map(ReportEntry::getBenefit)
+                .filter(benefit -> benefit.getBenefitTypeName().equals(ACCRUAL))
+                .distinct()
+                .collect(Collectors.toList());
+        List<Benefit> deductionsList = reportEntries.stream()
+                .map(ReportEntry::getBenefit)
+                .filter(benefit -> benefit.getBenefitTypeName().equals(DEDUCTION))
+                .distinct()
+                .collect(Collectors.toList());
 
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Payroll Register");
         applyCommonSheetStyleForPayrollRegisterFile(sheet);
         applyHeaderCellStyleForPayrollRegisterFile(workbook, sheet, accrualsList, deductionsList);
 
-
         Map<Employee, Map<String, BigDecimal>> amountsPerEmployee = createMapOfAmountsForAllEmployee(reportEntries);
 
         int rowNumber = 2;
         for (Map.Entry<Employee, Map<String, BigDecimal>> entry : amountsPerEmployee.entrySet()) {
-            Employee employee = entry.getKey();
-            Map<String, BigDecimal> amounts = entry.getValue();
             ReportEntry reportEntry = reportEntries.get(rowNumber - 2);
-            CellStyle cellNumberStyle = getCellNumberStyle(workbook);
-            CellStyle cellStringStyle = getCellStringStyle(workbook);
 
-            writeReportEntryDataInPayrollRegisterFileRows(sheet, rowNumber, reportEntry, employee, amounts, accrualsList, deductionsList, cellNumberStyle, cellStringStyle);
+            writeReportEntryDataInPayrollRegisterFileRows(workbook, sheet, rowNumber, reportEntry, entry, accrualsList, deductionsList);
             rowNumber += 1;
         }
         applySummarizingCellStyleForPayrollRegisterFile(workbook, amountsPerEmployee, accrualsList, deductionsList);

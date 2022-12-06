@@ -1,4 +1,4 @@
-package com.example.report.rabbitMQ;
+package com.example.report.consumers;
 
 import com.example.report.model.Employee;
 import com.example.report.model.EmployeeDTO;
