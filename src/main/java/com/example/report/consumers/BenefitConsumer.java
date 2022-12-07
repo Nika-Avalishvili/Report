@@ -1,4 +1,4 @@
-package com.example.report.rabbitMQ;
+package com.example.report.consumers;
 
 import com.example.report.model.*;
 import com.example.report.repository.BenefitRepository;
@@ -17,7 +17,6 @@ public class BenefitConsumer {
 
     private final BenefitMapper benefitMapper;
     private final BenefitRepository benefitRepository;
-
 
     @Bean
     public Consumer<BenefitDTOForMQ> benefitInput() {

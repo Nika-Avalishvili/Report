@@ -11,7 +11,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -139,14 +138,13 @@ public class ReportServiceTest {
                 .grossAmount(BigDecimal.valueOf(7500))
                 .document(new Document())
                 .build();
-
         Mockito.when(reportEntryRepository.findAllByReportId(anyLong())).thenReturn(List.of(reportEntry));
 
         assertThat(reportService.getReportEntriesByReportId(8L).get(0).getNetAmount()).isEqualByComparingTo(BigDecimal.valueOf(6000));
     }
 
     @Test
-    void extractAllReports() throws IOException {
+    void extractAllReports() {
         LocalDate testDate = LocalDate.of(2022, 10, 26);
         Report report1 = new Report(17L, testDate, testDate);
         Report report2 = new Report(19L, testDate, testDate);
@@ -156,5 +154,33 @@ public class ReportServiceTest {
 
         assertThat((long) workbook.getSheetAt(0).getRow(1).getCell(0).getNumericCellValue()).isEqualTo(report1.getId());
         assertThat((long) workbook.getSheetAt(0).getRow(2).getCell(0).getNumericCellValue()).isEqualTo(report2.getId());
+    }
+
+    @Test
+    void extractReportEntriesByReportId() {
+        LocalDate testDate = LocalDate.of(2022, 3, 14);
+
+        Document document = new Document(1L, testDate, testDate, 1L, 1L, BigDecimal.valueOf(1020));
+        Employee employee = new Employee(1L, "Nika", "Avalishvili", "Department", "Position", "email", true, true);
+        Benefit benefit = new Benefit(1L, "Salary", "Accrual", "Gross");
+        Report report = new Report(1L, testDate, testDate);
+
+        ReportEntry reportEntry = ReportEntry.builder()
+                .id(1L)
+                .document(document)
+                .employee(employee)
+                .benefit(benefit)
+                .report(report)
+                .netAmount(BigDecimal.valueOf(509.6))
+                .grossAmount(BigDecimal.valueOf(650))
+                .personalIncomeTax(BigDecimal.valueOf(127.4))
+                .pensionsFund(BigDecimal.valueOf(13))
+                .build();
+        Mockito.when(reportEntryRepository.findAllByReportId(anyLong())).thenReturn(List.of(reportEntry));
+        Workbook workbook = reportService.extractReportEntriesByReportId(1L);
+
+        assertThat(workbook.getSheetAt(0).getRow(1).getCell(8).getNumericCellValue()).isEqualByComparingTo(reportEntry.getGrossAmount().doubleValue());
+        assertThat(workbook.getSheetAt(0).getRow(1).getCell(11).getNumericCellValue()).isEqualByComparingTo(reportEntry.getPensionsFund().doubleValue());
+        assertThat(workbook.getSheetAt(0).getRow(1).getCell(2).getStringCellValue()).isEqualTo("Nika");
     }
 }
