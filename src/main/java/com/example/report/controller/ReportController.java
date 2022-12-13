@@ -13,8 +13,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -27,6 +30,7 @@ public class ReportController {
 
     public static final String PAYROLL_REGISTER = "Payroll_Register";
     private static final String LIST_OF_REPORTS = "List_Of_Reports";
+    private static final String PAY_SLIP = "PaySlip";
     private final ReportService reportService;
 
     private ResponseEntity<ByteArrayResource> workbookToResponseEntity(Workbook workbook, String fileName) throws IOException {
@@ -67,6 +71,27 @@ public class ReportController {
     public ResponseEntity<ByteArrayResource> extractReportEntriesByReportId(@RequestParam Long reportId) throws IOException {
         Workbook workbook = reportService.extractReportEntriesByReportId(reportId);
         return workbookToResponseEntity(workbook, PAYROLL_REGISTER);
+    }
+
+    @GetMapping("/extractPaySlip")
+    public ResponseEntity<ByteArrayResource> extractPaySlipsByEmployeeIdAndReportIdInExcel(@RequestParam Long employeeId, @RequestParam Long reportId) throws IOException {
+        Workbook workbook = reportService.extractPaySlip(employeeId , reportId);
+        return workbookToResponseEntity(workbook, PAY_SLIP);
+    }
+
+    @GetMapping("/extractPaySlipInPDF")
+    public void extractPaySlipsByEmployeeIdAndReportIdInPDF(HttpServletResponse response, @RequestParam Long employeeId, @RequestParam Long reportId) throws IOException {
+        DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
+        String currentDateTime = LocalDateTime.now().format(myFormatObj);
+
+        response.setContentType("application/pdf");
+        String headerKey = "Content-Disposition";
+        String headerValue = "attachment; filename=PaySlip" + currentDateTime + ".pdf";
+        response.setHeader(headerKey, headerValue);
+
+        com.lowagie.text.Document document = reportService.extractPaySlipInPDF(response, employeeId, reportId);
+
+        document.close();
     }
 
     @GetMapping("/{reportId}")

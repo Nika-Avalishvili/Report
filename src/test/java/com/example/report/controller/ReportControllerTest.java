@@ -214,4 +214,48 @@ public class ReportControllerTest {
         assertThat(workbook.getSheetAt(0).getRow(1).getCell(11).getNumericCellValue()).isEqualByComparingTo(reportEntry.getPensionsFund().doubleValue());
         assertThat(workbook.getSheetAt(0).getRow(1).getCell(2).getStringCellValue()).isEqualTo("Nika");
     }
+
+    @Test
+    void extractPaySlipsByEmployeeIdAndReportId() throws Exception {
+        LocalDate testDate = LocalDate.of(2022, 3, 14);
+        LocalDate startDate = LocalDate.of(2021, 3, 14);
+        LocalDate endDate = LocalDate.of(2023, 3, 14);
+
+        Document document = new Document(1L, testDate, testDate, 1L, 1L, BigDecimal.valueOf(1020));
+        Employee employee = new Employee(1L, "Nika", "Avalishvili", "Department", "Position", "email", true, true);
+        Benefit benefit = new Benefit(1L, "Salary", "Accrual", "Gross");
+        Report report = new Report(1L, startDate, endDate);
+
+        ReportEntry reportEntry = ReportEntry.builder()
+                .id(1L)
+                .document(document)
+                .employee(employee)
+                .benefit(benefit)
+                .report(report)
+                .netAmount(BigDecimal.valueOf(509.6))
+                .grossAmount(BigDecimal.valueOf(650))
+                .personalIncomeTax(BigDecimal.valueOf(127.4))
+                .pensionsFund(BigDecimal.valueOf(13))
+                .build();
+
+
+        documentRepository.save(document);
+        benefitRepository.save(benefit);
+        reportEntryRepository.save(reportEntry);
+        reportRepository.save(report);
+        Long employeeId = employeeRepository.save(employee).getId();
+        Long reportId = reportEntryRepository.save(reportEntry).getReport().getId();
+
+        byte[] contentAsString = mockMvc.perform(MockMvcRequestBuilders.get("/report/extractPaySlip?employeeId={employeeID}&reportId={reportId}", employeeId, reportId))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsByteArray();
+
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(contentAsString);
+
+        Workbook workbook = WorkbookFactory.create(byteArrayInputStream);
+
+        assertThat(workbook.getSheetAt(0).getRow(3).getCell(2).getNumericCellValue()).isEqualByComparingTo(reportEntry.getGrossAmount().doubleValue());
+        assertThat(workbook.getSheetAt(0).getRow(4).getCell(3).getNumericCellValue()).isEqualByComparingTo(reportEntry.getPensionsFund().doubleValue());
+        assertThat(workbook.getSheetAt(0).getRow(5).getCell(3).getNumericCellValue()).isEqualByComparingTo(reportEntry.getPersonalIncomeTax().doubleValue());
+    }
 }
