@@ -2,14 +2,7 @@ package com.example.report.service;
 
 import com.example.report.model.*;
 import com.example.report.repository.*;
-import com.jayway.jsonpath.ParseContext;
-import com.lowagie.text.pdf.*;
-import com.lowagie.text.pdf.parser.PdfContentReaderTool;
-import com.lowagie.text.pdf.parser.PdfTextExtractor;
-import kotlin.Metadata;
-import org.apache.commons.io.IOUtils;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.tomcat.util.codec.binary.Base64;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,15 +12,10 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -211,71 +199,4 @@ class ReportServiceTest {
 
         assertThat(workbook.getSheetAt(0).getRow(3).getCell(2).getNumericCellValue()).isEqualByComparingTo(reportEntry.getGrossAmount().doubleValue());
     }
-
-//    @Test
-//    void extractPaySlipInPDF() throws Exception {
-//        ReportEntry reportEntry = createReportEntry();
-//        Mockito.when(reportEntryRepository.findAllByEmployeeIdAndReportId(anyLong(), anyLong())).thenReturn(List.of(reportEntry));
-//
-////        ByteArrayOutputStream outputBuffer = new ByteArrayOutputStream();
-//
-//        response.setContentType("application/pdf");
-//        String headerKey = "Content-Disposition";
-//        String headerValue = "attachment; filename=PaySlip.pdf";
-//        response.setHeader(headerKey, headerValue);
-//
-//
-//
-//        ByteArrayOutputStream out = new ByteArrayOutputStream();
-//
-//        com.lowagie.text.Document document = reportService.extractPaySlipInPDF(response,1L, 1L);
-//
-//        PdfWriter.getInstance(document, out);
-//
-//        InputStream in = new ByteArrayInputStream(out.toByteArray());
-//
-//
-//        PdfReader pdfReader = new PdfReader(in);
-//        PdfStamper stamper = new PdfStamper(pdfReader, out);
-//
-//        System.out.println(stamper.getPdfLayers());
-//        document.close();
-//
-////        InputStream is = IOUtils.toInputStream(document.toString(), StandardCharsets.UTF_8);
-////        PdfReader pdfReader = new PdfReader(is);
-////        PdfReader pdfReader = new PdfReader(IOUtils.toInputStream(document.getJavaScript_onLoad(), StandardCharsets.UTF_16));
-////        PdfTextExtractor textExtractor = new PdfTextExtractor(pdfReader);
-////        textExtractor.getTextFromPage(0);
-////        System.out.println(textExtractor.getTextFromPage(0).toString());
-//
-//
-////        byte[] bytesDecoded = Base64.decodeBase64(document.toString().getBytes(StandardCharsets.UTF_8));
-////        ByteArrayInputStream inStream = new ByteArrayInputStream(document.toString().getBytes(StandardCharsets.UTF_8));
-////        PdfReader reader = new PdfReader(inStream);
-//////        PdfTextExtractor textExtractor = new PdfTextExtractor(reader);
-////
-//////        System.out.println(textExtractor.getTextFromPage(0));
-////
-////        System.out.println(reader.getInfo().keySet());
-//
-////        PdfWriter writer = PdfWriter.getInstance(document, outputBuffer);
-////
-////        PdfTable table = document.get
-////
-////        PdfDocument pdfDoc = new PdfDocument();
-////        pdfDoc.addWriter(writer);
-////
-////        System.out.println(writer.toString());
-////        System.out.println(writer.get(1).);
-////        document.addDocListener(pdfDoc);
-////        document.getJavaScript_onLoad();
-////====
-//
-////
-////
-////        document.close();
-//
-////        assertThat(pdfReader.getPdfObject(0))
-////        assertThat(workbook.getSheetAt(0).getRow(3).getCell(2).getNumericCellValue()).isEqualByComparingTo(reportEntry.getGrossAmount().doubleValue());
-//    }
 }

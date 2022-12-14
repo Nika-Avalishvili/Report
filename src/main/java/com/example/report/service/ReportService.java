@@ -1,24 +1,20 @@
 package com.example.report.service;
 
-import com.example.report.model.Document;
 import com.example.report.model.*;
 import com.example.report.repository.*;
 import com.lowagie.text.Font;
-import com.lowagie.text.*;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
-import com.lowagie.text.pdf.PdfWriter;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.hssf.util.HSSFColor;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -795,14 +791,10 @@ public class ReportService {
         table.addCell(String.valueOf(totalAccruals.subtract(totalDeductions)));
 
         document.add(table);
-
     }
 
 
-    public com.lowagie.text.Document extractPaySlipInPDF(HttpServletResponse response, Long employeeId, Long reportId) throws IOException {
-
-        com.lowagie.text.Document document = new com.lowagie.text.Document(PageSize.A4);
-        PdfWriter.getInstance(document, response.getOutputStream());
+    public void extractPaySlipInPDF(com.lowagie.text.Document document, Long employeeId, Long reportId) {
 
         List<ReportEntry> allByEmployeeIdAndReportId = reportEntryRepository.findAllByEmployeeIdAndReportId(employeeId, reportId);
         Employee employee = allByEmployeeIdAndReportId.get(0).getEmployee();
@@ -816,7 +808,7 @@ public class ReportService {
 
         writeReportEntryDataInPaySlipPDFFileRows(document, employee, report, amountsPerEmployee, benefits);
 
-        return document;
+        document.close();
     }
 
 }

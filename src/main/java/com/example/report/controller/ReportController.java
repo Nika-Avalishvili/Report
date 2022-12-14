@@ -3,6 +3,8 @@ package com.example.report.controller;
 import com.example.report.model.ReportDTO;
 import com.example.report.model.ReportEntryDTO;
 import com.example.report.service.ReportService;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.pdf.PdfWriter;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.core.io.ByteArrayResource;
@@ -16,8 +18,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -89,9 +89,10 @@ public class ReportController {
         String headerValue = "attachment; filename=PaySlip" + currentDateTime + ".pdf";
         response.setHeader(headerKey, headerValue);
 
-        com.lowagie.text.Document document = reportService.extractPaySlipInPDF(response, employeeId, reportId);
+        com.lowagie.text.Document document = new com.lowagie.text.Document(PageSize.A4);
+        PdfWriter.getInstance(document, response.getOutputStream());
+        reportService.extractPaySlipInPDF(document, employeeId, reportId);
 
-        document.close();
     }
 
     @GetMapping("/{reportId}")
