@@ -9,10 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -51,6 +48,7 @@ public class ReportController {
                 header, HttpStatus.CREATED);
     }
 
+
     @PostMapping("/generate")
     public List<ReportEntryDTO> generateReportEntries(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         return reportService.generateReportEntries(startDate, endDate);
@@ -73,14 +71,32 @@ public class ReportController {
         return workbookToResponseEntity(workbook, PAYROLL_REGISTER);
     }
 
-    @GetMapping("/extractPaySlip")
+    @GetMapping("/extractPaySlipInExcel")
     public ResponseEntity<ByteArrayResource> extractPaySlipsByEmployeeIdAndReportIdInExcel(@RequestParam Long employeeId, @RequestParam Long reportId) throws IOException {
-        Workbook workbook = reportService.extractPaySlip(employeeId , reportId);
+        Workbook workbook = reportService.extractPaySlipInExcel(employeeId , reportId);
         return workbookToResponseEntity(workbook, PAY_SLIP);
     }
 
-    @GetMapping("/extractPaySlipInPDF")
-    public void extractPaySlipsByEmployeeIdAndReportIdInPDF(HttpServletResponse response, @RequestParam Long employeeId, @RequestParam Long reportId) throws IOException {
+//    @GetMapping("/extractPaySlipInPDF")
+//    public void extractPaySlipsByEmployeeIdAndReportIdInPDF(HttpServletResponse response, @RequestParam Long employeeId, @RequestParam Long reportId) throws IOException {
+//        DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
+//        String currentDateTime = LocalDateTime.now().format(myFormatObj);
+//
+//        response.setContentType("application/pdf");
+//        String headerKey = "Content-Disposition";
+//        String headerValue = "attachment; filename=PaySlip" + currentDateTime + ".pdf";
+//        response.setHeader(headerKey, headerValue);
+//
+//        com.lowagie.text.Document document = new com.lowagie.text.Document(PageSize.A4);
+//        PdfWriter.getInstance(document, response.getOutputStream());
+//        reportService.extractPaySlipInPDF(document, employeeId, reportId);
+//    }
+
+
+    //    ===============================================================
+//    It should be renamed since it returns document and not OutputStream, but leave it temporarily
+    private com.lowagie.text.Document documentToOutputStream(HttpServletResponse response) throws IOException {
+        com.lowagie.text.Document document = new com.lowagie.text.Document(PageSize.A4);
         DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
         String currentDateTime = LocalDateTime.now().format(myFormatObj);
 
@@ -89,11 +105,16 @@ public class ReportController {
         String headerValue = "attachment; filename=PaySlip" + currentDateTime + ".pdf";
         response.setHeader(headerKey, headerValue);
 
-        com.lowagie.text.Document document = new com.lowagie.text.Document(PageSize.A4);
         PdfWriter.getInstance(document, response.getOutputStream());
-        reportService.extractPaySlipInPDF(document, employeeId, reportId);
-
+        return document;
     }
+
+
+    @GetMapping("/extractPaySlipInPDF")
+    public void extractPaySlipsByEmployeeIdAndReportIdInPDF(HttpServletResponse response, @RequestParam Long employeeId, @RequestParam Long reportId) throws IOException {
+        reportService.extractPaySlipInPDF(documentToOutputStream(response), employeeId, reportId);
+    }
+    //    ===============================================================
 
     @GetMapping("/{reportId}")
     public List<ReportEntryDTO> getReportEntriesByReportId(@PathVariable Long reportId) {

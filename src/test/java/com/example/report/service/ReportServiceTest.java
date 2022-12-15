@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -194,8 +195,15 @@ class ReportServiceTest {
     @Test
     void extractPaySlip() {
         ReportEntry reportEntry = createReportEntry();
+        LocalDate testDate = LocalDate.of(2022, 3, 14);
+        Employee employee = new Employee(1L, "Nika", "Avalishvili", "Department", "Position", "email", true, true);
+        Report report = new Report(1L, testDate, testDate);
+
         Mockito.when(reportEntryRepository.findAllByEmployeeIdAndReportId(anyLong(), anyLong())).thenReturn(List.of(reportEntry));
-        Workbook workbook = reportService.extractPaySlip(1L, 1L);
+        Mockito.when(employeeRepository.findById(anyLong())).thenReturn(Optional.of(employee));
+        Mockito.when(reportRepository.findById(anyLong())).thenReturn(Optional.of(report));
+
+        Workbook workbook = reportService.extractPaySlipInExcel(1L, 1L);
 
         assertThat(workbook.getSheetAt(0).getRow(3).getCell(2).getNumericCellValue()).isEqualByComparingTo(reportEntry.getGrossAmount().doubleValue());
     }

@@ -8,6 +8,8 @@ import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.*;
@@ -18,10 +20,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.awt.Color.BLUE;
@@ -245,17 +244,17 @@ public class ReportService {
 
     private void applyCommonSheetStyleForPaySlipFile(Sheet sheet) {
         sheet.autoSizeColumn(0);
-        sheet.autoSizeColumn(1);
-        sheet.autoSizeColumn(2);
-        sheet.autoSizeColumn(3);
-        sheet.setDisplayGridlines(false);
-        sheet.setZoom(120);
         sheet.setColumnWidth(1, 4500);
         sheet.setColumnWidth(2, 3500);
         sheet.setColumnWidth(3, 3500);
+        sheet.setDisplayGridlines(false);
+        sheet.setZoom(120);
     }
 
-    private void applyHeaderCellStyleForPaySlipFile(Workbook workbook, Sheet sheet, Employee employee, Report report) {
+    private void applyHeaderCellStyleForPaySlipFile(Workbook workbook, Sheet sheet, PaySlipData paySlipData) {
+        Employee employee = paySlipData.getEmployee();
+        Report report = paySlipData.getReport();
+
         CellStyle headerStyle = workbook.createCellStyle();
         XSSFFont font = ((XSSFWorkbook) workbook).createFont();
         font.setFontName(ARIAL);
@@ -355,7 +354,7 @@ public class ReportService {
         cell.setCellStyle(dateStyle);
     }
 
-    private void writeReportEntryDataInPayrollRegisterFileRows(Workbook workbook, Sheet sheet, Integer rowNumber, ReportEntry reportEntry, Map.Entry<Employee, Map<String, BigDecimal>> mapEntry, List<Benefit> accrualsList, List<Benefit> deductionsList) {
+    private void writeReportEntryDataInPayrollRegisterFileRows(Workbook workbook, Sheet sheet, int rowNumber, ReportEntry reportEntry, Map.Entry<Employee, Map<String, BigDecimal>> mapEntry, List<Benefit> accrualsList, List<Benefit> deductionsList) {
         Employee employee = mapEntry.getKey();
         Map<String, BigDecimal> mapOfAmounts = mapEntry.getValue();
 
@@ -431,7 +430,11 @@ public class ReportService {
         cell.setCellStyle(cellNumberStyle);
     }
 
-    private void writeReportEntryDataInPaySlipFileRows(Workbook workbook, Sheet sheet, Map<Employee, Map<String, BigDecimal>> amountsPerEmployee, Employee employee, List<Benefit> benefits) {
+    private void writeReportEntryDataInPaySlipFileRows(Workbook workbook, Sheet sheet, PaySlipData paySlipData) {
+        Employee employee = paySlipData.getEmployee();
+        List<Benefit> benefits = paySlipData.getBenefits();
+        Map<Employee, Map<String, BigDecimal>> amountsPerEmployee = paySlipData.getAmountsPerEmployee();
+
         Map<String, BigDecimal> mapOfAmounts = amountsPerEmployee.get(employee);
 
         CellStyle cellNumberStyle = getCellNumberStyle(workbook);
@@ -465,22 +468,18 @@ public class ReportService {
             cell.setCellValue(benefit.getName());
             cell.setCellStyle(cellStringStyle);
 
+            Cell cell2 = row.createCell(2);
+            cell2.setCellValue("");
+            cell2.setCellStyle(cellNumberStyle);
+
+            Cell cell3 = row.createCell(3);
+            cell3.setCellValue("");
+            cell3.setCellStyle(cellNumberStyle);
+
             if (benefit.getBenefitTypeName().equals(ACCRUAL)) {
-                cell = row.createCell(2);
-                cell.setCellValue(mapOfAmounts.get(benefit.getName()).doubleValue());
-                cell.setCellStyle(cellNumberStyle);
-
-                cell = row.createCell(3);
-                cell.setCellValue("");
-                cell.setCellStyle(cellNumberStyle);
+                cell2.setCellValue(mapOfAmounts.get(benefit.getName()).doubleValue());
             } else {
-                cell = row.createCell(2);
-                cell.setCellValue("");
-                cell.setCellStyle(cellNumberStyle);
-
-                cell = row.createCell(3);
-                cell.setCellValue(mapOfAmounts.get(benefit.getName()).doubleValue());
-                cell.setCellStyle(cellNumberStyle);
+                cell3.setCellValue(mapOfAmounts.get(benefit.getName()).doubleValue());
             }
             rowNum += 1;
         }
@@ -684,34 +683,27 @@ public class ReportService {
         return reportMapper.entityToDto(reportRepository.findAll());
     }
 
-    public Workbook extractPaySlip(Long employeeId, Long reportId){
-        List<ReportEntry> allByEmployeeIdAndReportId = reportEntryRepository.findAllByEmployeeIdAndReportId(employeeId, reportId);
-        Employee employee = allByEmployeeIdAndReportId.get(0).getEmployee();
-        Report report = allByEmployeeIdAndReportId.get(0).getReport();
-
+    private Workbook createWorkbookForPaySlips(PaySlipData paySlipData){
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("PaySlip");
         applyCommonSheetStyleForPaySlipFile(sheet);
-
-        applyHeaderCellStyleForPaySlipFile(workbook, sheet, employee, report);
-
-        List<Benefit> benefits = new ArrayList<>();
-        benefits.addAll(createListOfUniqueBenefits(allByEmployeeIdAndReportId, ACCRUAL));
-        benefits.addAll(createListOfUniqueBenefits(allByEmployeeIdAndReportId, DEDUCTION));
-
-        Map<Employee, Map<String, BigDecimal>> amountsPerEmployee = createMapOfAmountsForAllEmployee(allByEmployeeIdAndReportId);
-
-        writeReportEntryDataInPaySlipFileRows(workbook, sheet, amountsPerEmployee, employee, benefits);
-
+        applyHeaderCellStyleForPaySlipFile(workbook, sheet, paySlipData);
+        writeReportEntryDataInPaySlipFileRows(workbook, sheet, paySlipData);
         return workbook;
     }
 
-    private void writeReportEntryDataInPaySlipPDFFileRows(com.lowagie.text.Document document,
-                                                          Employee employee,
-                                                          Report report,
-                                                          Map<Employee, Map<String, BigDecimal>> amountsPerEmployee,
-                                                          List<Benefit> benefits
-                                                          ){
+
+    public Workbook extractPaySlipInExcel(Long employeeId, Long reportId){
+        PaySlipData paySlipData = createPaySlipData(employeeId, reportId);
+        return createWorkbookForPaySlips(paySlipData);
+    }
+
+
+    private void writeReportEntryDataInPaySlipPDFFileRows(com.lowagie.text.Document document, PaySlipData paySlipData){
+        Employee employee = paySlipData.getEmployee();
+        Report report = paySlipData.getReport();
+        List<Benefit> benefits = paySlipData.getBenefits();
+        Map<Employee, Map<String, BigDecimal>> amountsPerEmployee = paySlipData.getAmountsPerEmployee();
         Map<String, BigDecimal> amounts = amountsPerEmployee.get(employee);
 
         document.open();
@@ -738,13 +730,10 @@ public class ReportService {
 
         cell.setPhrase(new Phrase("Benefit Id", font));
         table.addCell(cell);
-
         cell.setPhrase(new Phrase("Benefit Name", font));
         table.addCell(cell);
-
         cell.setPhrase(new Phrase("Accruals", font));
         table.addCell(cell);
-
         cell.setPhrase(new Phrase("Deductions", font));
         table.addCell(cell);
 
@@ -795,6 +784,14 @@ public class ReportService {
 
 
     public void extractPaySlipInPDF(com.lowagie.text.Document document, Long employeeId, Long reportId) {
+        PaySlipData paySlipData = createPaySlipData(employeeId, reportId);
+        writeReportEntryDataInPaySlipPDFFileRows(document, paySlipData);
+        document.close();
+    }
+
+    private PaySlipData createPaySlipData(long employeeId, long reportId){
+        employeeRepository.findById(employeeId).orElseThrow(() -> new IndexOutOfBoundsException("Employee with indicated ID not found in DataBase"));
+        reportRepository.findById(reportId).orElseThrow(() -> new IndexOutOfBoundsException("Report with indicated ID not found in DataBase"));
 
         List<ReportEntry> allByEmployeeIdAndReportId = reportEntryRepository.findAllByEmployeeIdAndReportId(employeeId, reportId);
         Employee employee = allByEmployeeIdAndReportId.get(0).getEmployee();
@@ -806,10 +803,19 @@ public class ReportService {
 
         Map<Employee, Map<String, BigDecimal>> amountsPerEmployee = createMapOfAmountsForAllEmployee(allByEmployeeIdAndReportId);
 
-        writeReportEntryDataInPaySlipPDFFileRows(document, employee, report, amountsPerEmployee, benefits);
-
-        document.close();
+        return new PaySlipData(employee, report, benefits, amountsPerEmployee);
     }
+
+    @Data
+    @AllArgsConstructor
+    class PaySlipData {
+        private Employee employee;
+        private Report report;
+        private List<Benefit> benefits;
+        private Map<Employee, Map<String, BigDecimal>> amountsPerEmployee;
+    }
+
+
 
 }
 

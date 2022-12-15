@@ -239,7 +239,6 @@ class ReportControllerTest {
                 .pensionsFund(BigDecimal.valueOf(13))
                 .build();
 
-
         documentRepository.save(document);
         benefitRepository.save(benefit);
         reportEntryRepository.save(reportEntry);
@@ -247,7 +246,9 @@ class ReportControllerTest {
         Long employeeId = employeeRepository.save(employee).getId();
         Long reportId = reportEntryRepository.save(reportEntry).getReport().getId();
 
-        byte[] contentAsString = mockMvc.perform(MockMvcRequestBuilders.get("/report/extractPaySlip?employeeId={employeeID}&reportId={reportId}", employeeId, reportId))
+        byte[] contentAsString = mockMvc.perform(MockMvcRequestBuilders.get("/report/extractPaySlipInExcel")
+                .param("employeeId", employeeId.toString())
+                .param("reportId", reportId.toString()))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsByteArray();
 
@@ -292,7 +293,9 @@ class ReportControllerTest {
         Long employeeId = employeeRepository.save(employee).getId();
         Long reportId = reportEntryRepository.save(reportEntry).getReport().getId();
 
-        MockHttpServletResponse response = mockMvc.perform(MockMvcRequestBuilders.get("/report/extractPaySlipInPDF?employeeId={employeeID}&reportId={reportId}", employeeId, reportId))
+        MockHttpServletResponse response = mockMvc.perform(MockMvcRequestBuilders.get("/report/extractPaySlipInPDF")
+                        .param("employeeId", employeeId.toString())
+                        .param("reportId", reportId.toString()))
                 .andExpect(status().isOk())
                 .andReturn().getResponse();
 
