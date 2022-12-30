@@ -11,17 +11,21 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 
 @ExtendWith(MockitoExtension.class)
-public class ReportServiceTest {
+class ReportServiceTest {
 
+    @Mock
+    HttpServletResponse response;
     @Mock
     ReportRepository reportRepository;
     @Mock
@@ -156,8 +160,7 @@ public class ReportServiceTest {
         assertThat((long) workbook.getSheetAt(0).getRow(2).getCell(0).getNumericCellValue()).isEqualTo(report2.getId());
     }
 
-    @Test
-    void extractReportEntriesByReportId() {
+    private ReportEntry createReportEntry() {
         LocalDate testDate = LocalDate.of(2022, 3, 14);
 
         Document document = new Document(1L, testDate, testDate, 1L, 1L, BigDecimal.valueOf(1020));
@@ -165,7 +168,7 @@ public class ReportServiceTest {
         Benefit benefit = new Benefit(1L, "Salary", "Accrual", "Gross");
         Report report = new Report(1L, testDate, testDate);
 
-        ReportEntry reportEntry = ReportEntry.builder()
+        return ReportEntry.builder()
                 .id(1L)
                 .document(document)
                 .employee(employee)
@@ -176,11 +179,32 @@ public class ReportServiceTest {
                 .personalIncomeTax(BigDecimal.valueOf(127.4))
                 .pensionsFund(BigDecimal.valueOf(13))
                 .build();
+    }
+
+    @Test
+    void extractReportEntriesByReportId() {
+        ReportEntry reportEntry = createReportEntry();
         Mockito.when(reportEntryRepository.findAllByReportId(anyLong())).thenReturn(List.of(reportEntry));
         Workbook workbook = reportService.extractReportEntriesByReportId(1L);
 
         assertThat(workbook.getSheetAt(0).getRow(1).getCell(8).getNumericCellValue()).isEqualByComparingTo(reportEntry.getGrossAmount().doubleValue());
         assertThat(workbook.getSheetAt(0).getRow(1).getCell(11).getNumericCellValue()).isEqualByComparingTo(reportEntry.getPensionsFund().doubleValue());
         assertThat(workbook.getSheetAt(0).getRow(1).getCell(2).getStringCellValue()).isEqualTo("Nika");
+    }
+
+    @Test
+    void extractPaySlip() {
+        ReportEntry reportEntry = createReportEntry();
+        LocalDate testDate = LocalDate.of(2022, 3, 14);
+        Employee employee = new Employee(1L, "Nika", "Avalishvili", "Department", "Position", "email", true, true);
+        Report report = new Report(1L, testDate, testDate);
+
+        Mockito.when(reportEntryRepository.findAllByEmployeeIdAndReportId(anyLong(), anyLong())).thenReturn(List.of(reportEntry));
+        Mockito.when(employeeRepository.findById(anyLong())).thenReturn(Optional.of(employee));
+        Mockito.when(reportRepository.findById(anyLong())).thenReturn(Optional.of(report));
+
+        Workbook workbook = reportService.extractPaySlipInExcel(1L, 1L);
+
+        assertThat(workbook.getSheetAt(0).getRow(3).getCell(2).getNumericCellValue()).isEqualByComparingTo(reportEntry.getGrossAmount().doubleValue());
     }
 }

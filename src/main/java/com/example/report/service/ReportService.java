@@ -2,6 +2,14 @@ package com.example.report.service;
 
 import com.example.report.model.*;
 import com.example.report.repository.*;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.*;
@@ -14,6 +22,9 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static java.awt.Color.BLUE;
+import static java.awt.Color.WHITE;
 
 
 @Service
@@ -231,6 +242,68 @@ public class ReportService {
         headerCell.setCellStyle(headerStyle);
     }
 
+    private void applyCommonSheetStyleForPaySlipFile(Sheet sheet) {
+        sheet.autoSizeColumn(0);
+        sheet.setColumnWidth(1, 4500);
+        sheet.setColumnWidth(2, 3500);
+        sheet.setColumnWidth(3, 3500);
+        sheet.setDisplayGridlines(false);
+        sheet.setZoom(120);
+    }
+
+    private void applyHeaderCellStyleForPaySlipFile(Workbook workbook, Sheet sheet, PaySlipData paySlipData) {
+        Employee employee = paySlipData.getEmployee();
+        Report report = paySlipData.getReport();
+
+        CellStyle headerStyle = workbook.createCellStyle();
+        XSSFFont font = ((XSSFWorkbook) workbook).createFont();
+        font.setFontName(ARIAL);
+        font.setFontHeightInPoints((short) 11);
+        font.setBold(true);
+        font.setColor(HSSFColor.HSSFColorPredefined.WHITE.getIndex());
+        headerStyle.setFillForegroundColor(IndexedColors.TEAL.getIndex());
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        headerStyle.setFont(font);
+        headerStyle.setAlignment(HorizontalAlignment.CENTER);
+        headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        headerStyle.setBorderBottom(BorderStyle.THIN);
+        headerStyle.setBottomBorderColor(HSSFColor.HSSFColorPredefined.TEAL.getIndex());
+        headerStyle.setWrapText(true);
+
+        String firstName = employee.getFirstName();
+        String lastName = employee.getLastName();
+        String department = employee.getDepartment();
+        String position = employee.getPositions();
+
+        String startDate = report.getStartDate().toString();
+        String endDate = report.getEndDate().toString();
+
+        Row header1 = sheet.createRow(0);
+        Cell headerCell = header1.createCell(0);
+        headerCell.setCellValue(String.format("PaySlip details [from %s to %s]", startDate, endDate));
+
+        Row header2 = sheet.createRow(1);
+        headerCell = header2.createCell(0);
+        headerCell.setCellValue(String.format("%s %s, %s, %s", firstName, lastName, department, position));
+
+        Row header3 = sheet.createRow(2);
+        headerCell = header3.createCell(0);
+        headerCell.setCellValue("Benefit ID");
+        headerCell.setCellStyle(headerStyle);
+
+        headerCell = header3.createCell(1);
+        headerCell.setCellValue("Benefit Name");
+        headerCell.setCellStyle(headerStyle);
+
+        headerCell = header3.createCell(2);
+        headerCell.setCellValue("Accruals");
+        headerCell.setCellStyle(headerStyle);
+
+        headerCell = header3.createCell(3);
+        headerCell.setCellValue("Deductions");
+        headerCell.setCellStyle(headerStyle);
+    }
+
     private void applySummarizingCellStyleForPayrollRegisterFile(Workbook workbook, Map<Employee, Map<String, BigDecimal>> amountsPerEmployee, List<Benefit> accrualsList, List<Benefit> deductionsList) {
         CellStyle lastRowStyle = workbook.createCellStyle();
 
@@ -281,7 +354,7 @@ public class ReportService {
         cell.setCellStyle(dateStyle);
     }
 
-    private void writeReportEntryDataInPayrollRegisterFileRows(Workbook workbook, Sheet sheet, Integer rowNumber, ReportEntry reportEntry, Map.Entry<Employee, Map<String, BigDecimal>> mapEntry, List<Benefit> accrualsList, List<Benefit> deductionsList) {
+    private void writeReportEntryDataInPayrollRegisterFileRows(Workbook workbook, Sheet sheet, int rowNumber, ReportEntry reportEntry, Map.Entry<Employee, Map<String, BigDecimal>> mapEntry, List<Benefit> accrualsList, List<Benefit> deductionsList) {
         Employee employee = mapEntry.getKey();
         Map<String, BigDecimal> mapOfAmounts = mapEntry.getValue();
 
@@ -357,6 +430,122 @@ public class ReportService {
         cell.setCellStyle(cellNumberStyle);
     }
 
+    private void writeReportEntryDataInPaySlipFileRows(Workbook workbook, Sheet sheet, PaySlipData paySlipData) {
+        Employee employee = paySlipData.getEmployee();
+        List<Benefit> benefits = paySlipData.getBenefits();
+        Map<Employee, Map<String, BigDecimal>> amountsPerEmployee = paySlipData.getAmountsPerEmployee();
+
+        Map<String, BigDecimal> mapOfAmounts = amountsPerEmployee.get(employee);
+
+        CellStyle cellNumberStyle = getCellNumberStyle(workbook);
+        CellStyle cellStringStyle = getCellStringStyle(workbook);
+
+        CellStyle lastRowStyle = workbook.createCellStyle();
+
+        XSSFFont font = ((XSSFWorkbook) workbook).createFont();
+        font.setFontName(ARIAL);
+        font.setFontHeightInPoints((short) 10);
+        font.setBold(true);
+        font.setItalic(true);
+
+        lastRowStyle.setFont(font);
+        lastRowStyle.setAlignment(HorizontalAlignment.RIGHT);
+        lastRowStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        lastRowStyle.setBorderBottom(BorderStyle.DOUBLE);
+        lastRowStyle.setBottomBorderColor(HSSFColor.HSSFColorPredefined.TEAL.getIndex());
+
+
+        int rowNum = 3;
+
+        for (Benefit benefit : benefits) {
+            Row row = sheet.createRow(rowNum);
+
+            Cell cell = row.createCell(0);
+            cell.setCellValue(benefit.getId());
+            cell.setCellStyle(cellNumberStyle);
+
+            cell = row.createCell(1);
+            cell.setCellValue(benefit.getName());
+            cell.setCellStyle(cellStringStyle);
+
+            Cell cell2 = row.createCell(2);
+            cell2.setCellValue("");
+            cell2.setCellStyle(cellNumberStyle);
+
+            Cell cell3 = row.createCell(3);
+            cell3.setCellValue("");
+            cell3.setCellStyle(cellNumberStyle);
+
+            if (benefit.getBenefitTypeName().equals(ACCRUAL)) {
+                cell2.setCellValue(mapOfAmounts.get(benefit.getName()).doubleValue());
+            } else {
+                cell3.setCellValue(mapOfAmounts.get(benefit.getName()).doubleValue());
+            }
+            rowNum += 1;
+        }
+
+            Row pensionsFundRow = sheet.createRow(rowNum);
+            Cell cell = pensionsFundRow.createCell(0);
+            cell.setCellValue("");
+            cell.setCellStyle(cellStringStyle);
+
+            cell = pensionsFundRow.createCell(1);
+            cell.setCellValue("Pensions Fund");
+            cell.setCellStyle(cellStringStyle);
+
+            cell = pensionsFundRow.createCell(2);
+            cell.setCellStyle(cellNumberStyle);
+
+            cell = pensionsFundRow.createCell(3);
+            cell.setCellValue(mapOfAmounts.get(PENSIONS_FUND).doubleValue());
+            cell.setCellStyle(cellNumberStyle);
+
+            rowNum += 1;
+            Row personalIncomeTaxRow = sheet.createRow(rowNum);
+            cell = personalIncomeTaxRow.createCell(0);
+            cell.setCellValue("");
+            cell.setCellStyle(cellStringStyle);
+
+            cell = personalIncomeTaxRow.createCell(1);
+            cell.setCellValue("Personal Income Tax");
+            cell.setCellStyle(cellStringStyle);
+
+            cell = personalIncomeTaxRow.createCell(2);
+            cell.setCellStyle(cellNumberStyle);
+
+            cell = personalIncomeTaxRow.createCell(3);
+            cell.setCellValue(mapOfAmounts.get(PERSONAL_INCOME_TAX).doubleValue());
+            cell.setCellStyle(cellNumberStyle);
+
+            rowNum += 1;
+
+            Row summarizingRow = sheet.createRow(rowNum);
+            cell = summarizingRow.createCell(0);
+            cell.setCellValue("");
+            cell.setCellStyle(lastRowStyle);
+
+            cell = summarizingRow.createCell(1);
+            cell.setCellValue("TOTAL");
+            cell.setCellStyle(lastRowStyle);
+
+            cell = summarizingRow.createCell(2);
+            cell.setCellFormula(String.format("sum(C4:C%s)", (rowNum)));
+            cell.setCellStyle(lastRowStyle);
+
+            cell = summarizingRow.createCell(3);
+            cell.setCellFormula(String.format("sum(D4:D%s)", (rowNum)));
+            cell.setCellStyle(lastRowStyle);
+
+            Row lastRow = sheet.createRow(rowNum+1);
+            lastRow.createCell(0);
+            cell = lastRow.createCell(1);
+            cell.setCellValue("NET Amount");
+            lastRow.createCell(2);
+            cell = lastRow.createCell(3);
+            cell.setCellFormula(String.format("C%s-D%s", (rowNum+1), (rowNum+1)));
+
+    }
+
     private CellStyle getCellStringStyle(Workbook workbook) {
         CellStyle stringStyle = workbook.createCellStyle();
         stringStyle.setWrapText(false);
@@ -420,19 +609,19 @@ public class ReportService {
         return amountsPerEmployee;
     }
 
+    private List<Benefit> createListOfUniqueBenefits(List<ReportEntry> reportEntries, String benefitTypeName){
+        return reportEntries.stream()
+                .map(ReportEntry::getBenefit)
+                .filter(benefit -> benefit.getBenefitTypeName().equals(benefitTypeName))
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
     public Workbook extractReportEntriesByReportId(Long reportId) {
         List<ReportEntry> reportEntries = reportEntryRepository.findAllByReportId(reportId);
 
-        List<Benefit> accrualsList = reportEntries.stream()
-                .map(ReportEntry::getBenefit)
-                .filter(benefit -> benefit.getBenefitTypeName().equals(ACCRUAL))
-                .distinct()
-                .collect(Collectors.toList());
-        List<Benefit> deductionsList = reportEntries.stream()
-                .map(ReportEntry::getBenefit)
-                .filter(benefit -> benefit.getBenefitTypeName().equals(DEDUCTION))
-                .distinct()
-                .collect(Collectors.toList());
+        List<Benefit> accrualsList = createListOfUniqueBenefits(reportEntries, ACCRUAL);
+        List<Benefit> deductionsList = createListOfUniqueBenefits(reportEntries, DEDUCTION);
 
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Payroll Register");
@@ -493,6 +682,140 @@ public class ReportService {
     public List<ReportDTO> getAllReports() {
         return reportMapper.entityToDto(reportRepository.findAll());
     }
+
+    private Workbook createWorkbookForPaySlips(PaySlipData paySlipData){
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("PaySlip");
+        applyCommonSheetStyleForPaySlipFile(sheet);
+        applyHeaderCellStyleForPaySlipFile(workbook, sheet, paySlipData);
+        writeReportEntryDataInPaySlipFileRows(workbook, sheet, paySlipData);
+        return workbook;
+    }
+
+
+    public Workbook extractPaySlipInExcel(Long employeeId, Long reportId){
+        PaySlipData paySlipData = createPaySlipData(employeeId, reportId);
+        return createWorkbookForPaySlips(paySlipData);
+    }
+
+
+    private void writeReportEntryDataInPaySlipPDFFileRows(com.lowagie.text.Document document, PaySlipData paySlipData){
+        Employee employee = paySlipData.getEmployee();
+        Report report = paySlipData.getReport();
+        List<Benefit> benefits = paySlipData.getBenefits();
+        Map<Employee, Map<String, BigDecimal>> amountsPerEmployee = paySlipData.getAmountsPerEmployee();
+        Map<String, BigDecimal> amounts = amountsPerEmployee.get(employee);
+
+        document.open();
+        Font fontTitle = FontFactory.getFont(ARIAL);
+        fontTitle.setSize(14);
+
+        Paragraph title1 = new Paragraph(String.format("PaySlip details [from %s to %s]", report.getStartDate(), report.getEndDate()), fontTitle);
+        Paragraph title2 = new Paragraph(String.format("%s %s, %s, %s", employee.getFirstName(), employee.getLastName(), employee.getDepartment(), employee.getPositions()), fontTitle);
+
+        document.add(title1);
+        document.add(title2);
+
+        PdfPTable table = new PdfPTable(4);
+        table.setWidthPercentage(100);
+        table.setWidths(new int[] {2,4,3,3});
+        table.setSpacingBefore(5);
+
+        PdfPCell cell = new PdfPCell();
+        cell.setBackgroundColor(BLUE);
+        cell.setPadding(5);
+
+        Font font = FontFactory.getFont(ARIAL);
+        font.setColor(WHITE);
+
+        cell.setPhrase(new Phrase("Benefit Id", font));
+        table.addCell(cell);
+        cell.setPhrase(new Phrase("Benefit Name", font));
+        table.addCell(cell);
+        cell.setPhrase(new Phrase("Accruals", font));
+        table.addCell(cell);
+        cell.setPhrase(new Phrase("Deductions", font));
+        table.addCell(cell);
+
+
+        BigDecimal totalAccruals = BigDecimal.ZERO;
+        BigDecimal totalDeductions = BigDecimal.ZERO;
+
+        for (Benefit benefit : benefits) {
+            table.addCell(String.valueOf(benefit.getId()));
+            table.addCell(benefit.getName());
+
+            if (benefit.getBenefitTypeName().equals(ACCRUAL)){
+                table.addCell(String.valueOf(amounts.get(benefit.getName())));
+                table.addCell("");
+                totalAccruals = totalAccruals.add(amounts.get(benefit.getName()));
+            } else {
+                table.addCell("");
+                table.addCell(String.valueOf(amounts.get(benefit.getName())));
+                totalDeductions = totalDeductions.add(amounts.get(benefit.getName()));
+            }
+        }
+
+        totalDeductions = totalDeductions.add(amounts.get(PENSIONS_FUND));
+        totalDeductions = totalDeductions.add(amounts.get(PERSONAL_INCOME_TAX));
+
+        table.addCell("");
+        table.addCell("Pensions Fund");
+        table.addCell("");
+        table.addCell(amounts.get(PENSIONS_FUND).toString());
+
+        table.addCell("");
+        table.addCell("Personal Income Tax");
+        table.addCell("");
+        table.addCell(amounts.get(PERSONAL_INCOME_TAX).toString());
+
+        table.addCell("");
+        table.addCell("TOTAL");
+        table.addCell(String.valueOf(totalAccruals));
+        table.addCell(String.valueOf(totalDeductions));
+
+        table.addCell("");
+        table.addCell("NET Payable Amount");
+        table.addCell("");
+        table.addCell(String.valueOf(totalAccruals.subtract(totalDeductions)));
+
+        document.add(table);
+    }
+
+
+    public void extractPaySlipInPDF(com.lowagie.text.Document document, Long employeeId, Long reportId) {
+        PaySlipData paySlipData = createPaySlipData(employeeId, reportId);
+        writeReportEntryDataInPaySlipPDFFileRows(document, paySlipData);
+        document.close();
+    }
+
+    private PaySlipData createPaySlipData(long employeeId, long reportId){
+        employeeRepository.findById(employeeId).orElseThrow(() -> new IndexOutOfBoundsException("Employee with indicated ID not found in DataBase"));
+        reportRepository.findById(reportId).orElseThrow(() -> new IndexOutOfBoundsException("Report with indicated ID not found in DataBase"));
+
+        List<ReportEntry> allByEmployeeIdAndReportId = reportEntryRepository.findAllByEmployeeIdAndReportId(employeeId, reportId);
+        Employee employee = allByEmployeeIdAndReportId.get(0).getEmployee();
+        Report report = allByEmployeeIdAndReportId.get(0).getReport();
+
+        List<Benefit> benefits = new ArrayList<>();
+        benefits.addAll(createListOfUniqueBenefits(allByEmployeeIdAndReportId, ACCRUAL));
+        benefits.addAll(createListOfUniqueBenefits(allByEmployeeIdAndReportId, DEDUCTION));
+
+        Map<Employee, Map<String, BigDecimal>> amountsPerEmployee = createMapOfAmountsForAllEmployee(allByEmployeeIdAndReportId);
+
+        return new PaySlipData(employee, report, benefits, amountsPerEmployee);
+    }
+
+    @Data
+    @AllArgsConstructor
+    class PaySlipData {
+        private Employee employee;
+        private Report report;
+        private List<Benefit> benefits;
+        private Map<Employee, Map<String, BigDecimal>> amountsPerEmployee;
+    }
+
+
 
 }
 
