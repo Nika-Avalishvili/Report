@@ -77,24 +77,6 @@ public class ReportController {
         return workbookToResponseEntity(workbook, PAY_SLIP);
     }
 
-//    @GetMapping("/extractPaySlipInPDF")
-//    public void extractPaySlipsByEmployeeIdAndReportIdInPDF(HttpServletResponse response, @RequestParam Long employeeId, @RequestParam Long reportId) throws IOException {
-//        DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
-//        String currentDateTime = LocalDateTime.now().format(myFormatObj);
-//
-//        response.setContentType("application/pdf");
-//        String headerKey = "Content-Disposition";
-//        String headerValue = "attachment; filename=PaySlip" + currentDateTime + ".pdf";
-//        response.setHeader(headerKey, headerValue);
-//
-//        com.lowagie.text.Document document = new com.lowagie.text.Document(PageSize.A4);
-//        PdfWriter.getInstance(document, response.getOutputStream());
-//        reportService.extractPaySlipInPDF(document, employeeId, reportId);
-//    }
-
-
-    //    ===============================================================
-//    It should be renamed since it returns document and not OutputStream, but leave it temporarily
     private com.lowagie.text.Document documentToOutputStream(HttpServletResponse response) throws IOException {
         com.lowagie.text.Document document = new com.lowagie.text.Document(PageSize.A4);
         DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
@@ -114,7 +96,7 @@ public class ReportController {
     public void extractPaySlipsByEmployeeIdAndReportIdInPDF(HttpServletResponse response, @RequestParam Long employeeId, @RequestParam Long reportId) throws IOException {
         reportService.extractPaySlipInPDF(documentToOutputStream(response), employeeId, reportId);
     }
-    //    ===============================================================
+
 
     @GetMapping("/{reportId}")
     public List<ReportEntryDTO> getReportEntriesByReportId(@PathVariable Long reportId) {
